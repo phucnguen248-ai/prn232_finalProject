@@ -1,0 +1,256 @@
+@page
+@model ClinicBooking.Web.Pages.Admin.DoctorsModel
+@{
+    ViewData["Title"] = "Quản Lý Bác Sĩ";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-person-badge text-primary me-2"></i>Quản Lý Hồ Sơ Bác Sĩ</h2>
+        <p class="text-muted mb-0">Quản lý danh sách bác sĩ, số giấy phép và chuyên khoa đảm nhận</p>
+    </div>
+    <button class="btn btn-primary-gradient" onclick="openCreateDoctorModal()">
+        <i class="bi bi-person-plus me-1"></i>Thêm Bác Sĩ Mới
+    </button>
+</div>
+
+<div class="card card-premium p-4">
+    <div class="table-responsive">
+        <table id="table-doctors" class="table table-hover align-middle w-100">
+            <thead>
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Họ và Tên Bác Sĩ</th>
+                    <th>Chuyên Khoa</th>
+                    <th>Số Điện Thoại</th>
+                    <th>Số Giấy Phép</th>
+                    <th>Kinh Nghiệm</th>
+                    <th>Trạng Thái</th>
+                    <th style="width: 100px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rendered via jQuery AJAX -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Create Doctor -->
+<div class="modal fade" id="modalDoctor" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold" id="modalDoctorTitle">Thêm Bác Sĩ Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-doctor">
+                    <input type="hidden" id="doc-id" value="0" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Họ và Tên Bác Sĩ <span class="text-danger">*</span></label>
+                            <input type="text" id="doc-fullname" class="form-control" required placeholder="BS. Nguyễn Văn A" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email Đăng Nhập <span class="text-danger">*</span></label>
+                            <input type="email" id="doc-email" class="form-control" required placeholder="doctor@clinic.com" />
+                        </div>
+                        <div class="col-md-6" id="div-password">
+                            <label class="form-label fw-semibold">Mật Khẩu Khởi Tạo <span class="text-danger">*</span></label>
+                            <input type="password" id="doc-password" class="form-control" placeholder="••••••••" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số Điện Thoại <span class="text-danger">*</span></label>
+                            <input type="text" id="doc-phone" class="form-control" required placeholder="0912345678" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Chuyên Khoa <span class="text-danger">*</span></label>
+                            <select id="doc-spec" class="form-select" required>
+                                <option value="">-- Chọn Chuyên Khoa --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Số Giấy Phép <span class="text-danger">*</span></label>
+                            <input type="text" id="doc-license" class="form-control" required placeholder="LIC-12345" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Kinh Nghiệm (Năm)</label>
+                            <input type="number" id="doc-exp" class="form-control" min="0" value="5" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Giới Thiệu (Bio)</label>
+                            <textarea id="doc-bio" class="form-control" rows="3" placeholder="Tóm tắt quá trình công tác, thành tựu..."></textarea>
+                        </div>
+                    </div>
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary-gradient">Lưu Bác Sĩ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let docTable;
+    let specList = [];
+
+    $(document).ready(function () {
+        loadSpecializationDropdown();
+        loadDoctors();
+    });
+
+    function loadSpecializationDropdown() {
+        $.ajax({
+            url: `${API_BASE_URL}/specializations`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function (data) {
+                specList = data;
+                let options = '<option value="">-- Chọn Chuyên Khoa --</option>';
+                data.forEach(s => {
+                    options += `<option value="${s.specializationId}">${s.name}</option>`;
+                });
+                $("#doc-spec").html(options);
+            }
+        });
+    }
+
+    function loadDoctors() {
+        $.ajax({
+            url: `${API_BASE_URL}/doctors/list`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function (data) {
+                if ($.fn.DataTable.isDataTable('#table-doctors')) {
+                    $('#table-doctors').DataTable().destroy();
+                }
+
+                const rows = data.map(item => `
+                    <tr>
+                        <td class="fw-bold text-muted">#${item.doctorId}</td>
+                        <td class="fw-semibold">${item.fullName} <br/><small class="text-muted">${item.email}</small></td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">${item.specializationName}</span></td>
+                        <td>${item.phoneNumber}</td>
+                        <td><code>${item.licenseNumber}</code></td>
+                        <td>${item.yearsOfExperience} năm</td>
+                        <td>
+                            ${item.isActive 
+                                ? '<span class="badge bg-success bg-opacity-10 text-success fw-semibold">Đang Hoạt Động</span>' 
+                                : '<span class="badge bg-secondary">Tạm Khóa</span>'}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1 rounded-circle" onclick="openEditDoctorModal(${item.doctorId}, '${escapeQuotes(item.fullName)}', '${escapeQuotes(item.phoneNumber)}', ${item.specializationId}, '${escapeQuotes(item.licenseNumber)}', ${item.yearsOfExperience}, '${escapeQuotes(item.bio)}', ${item.isActive})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                $('#table-doctors tbody').html(rows);
+                docTable = $('#table-doctors').DataTable({
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ mục",
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        paginate: { first: "Đầu", last: "Cuối", next: "Sau", previous: "Trước" }
+                    }
+                });
+            }
+        });
+    }
+
+    function escapeQuotes(str) {
+        return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function openCreateDoctorModal() {
+        $("#doc-id").val("0");
+        $("#doc-fullname").val("");
+        $("#doc-email").val("").prop("disabled", false);
+        $("#div-password").removeClass("d-none");
+        $("#doc-password").prop("required", true);
+        $("#doc-phone").val("");
+        $("#doc-spec").val("");
+        $("#doc-license").val("");
+        $("#doc-exp").val("5");
+        $("#doc-bio").val("");
+        $("#modalDoctorTitle").text("Thêm Bác Sĩ Mới");
+        new bootstrap.Modal('#modalDoctor').show();
+    }
+
+    function openEditDoctorModal(id, fullname, phone, specId, license, exp, bio, isActive) {
+        $("#doc-id").val(id);
+        $("#doc-fullname").val(fullname);
+        $("#doc-email").prop("disabled", true);
+        $("#div-password").addClass("d-none");
+        $("#doc-password").prop("required", false);
+        $("#doc-phone").val(phone);
+        $("#doc-spec").val(specId);
+        $("#doc-license").val(license);
+        $("#doc-exp").val(exp);
+        $("#doc-bio").val(bio);
+        $("#modalDoctorTitle").text("Cập Nhật Hồ Sơ Bác Sĩ");
+        new bootstrap.Modal('#modalDoctor').show();
+    }
+
+    $("#form-doctor").on("submit", function (e) {
+        e.preventDefault();
+        const id = parseInt($("#doc-id").val());
+
+        if (id === 0) {
+            const payload = {
+                email: $("#doc-email").val().trim(),
+                password: $("#doc-password").val(),
+                fullName: $("#doc-fullname").val().trim(),
+                phoneNumber: $("#doc-phone").val().trim(),
+                specializationId: parseInt($("#doc-spec").val()),
+                licenseNumber: $("#doc-license").val().trim(),
+                yearsOfExperience: parseInt($("#doc-exp").val()),
+                bio: $("#doc-bio").val().trim()
+            };
+
+            $.ajax({
+                url: `${API_BASE_URL}/doctors`,
+                type: "POST",
+                headers: getAuthHeaders(),
+                data: JSON.stringify(payload),
+                success: function () {
+                    bootstrap.Modal.getInstance('#modalDoctor').hide();
+                    loadDoctors();
+                },
+                error: function (xhr) {
+                    alert(xhr.responseJSON?.message || "Có lỗi xảy ra khi tạo bác sĩ.");
+                }
+            });
+        } else {
+            const payload = {
+                fullName: $("#doc-fullname").val().trim(),
+                phoneNumber: $("#doc-phone").val().trim(),
+                specializationId: parseInt($("#doc-spec").val()),
+                licenseNumber: $("#doc-license").val().trim(),
+                yearsOfExperience: parseInt($("#doc-exp").val()),
+                bio: $("#doc-bio").val().trim(),
+                isActive: true
+            };
+
+            $.ajax({
+                url: `${API_BASE_URL}/doctors/${id}`,
+                type: "PUT",
+                headers: getAuthHeaders(),
+                data: JSON.stringify(payload),
+                success: function () {
+                    bootstrap.Modal.getInstance('#modalDoctor').hide();
+                    loadDoctors();
+                },
+                error: function (xhr) {
+                    alert(xhr.responseJSON?.message || "Có lỗi xảy ra khi cập nhật bác sĩ.");
+                }
+            });
+        }
+    });
+</script>
+}

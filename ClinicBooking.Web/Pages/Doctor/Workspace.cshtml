@@ -1,0 +1,189 @@
+@page
+@model ClinicBooking.Web.Pages.Doctor.WorkspaceModel
+@{
+    ViewData["Title"] = "Phòng Khám Bác Sĩ - Workspace";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="hero-section text-white p-4 rounded-4 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="bi bi-clipboard-pulse me-2"></i>Workspace Bác Sĩ</h2>
+                <p class="mb-0 text-white-50">Danh sách bệnh nhân chờ khám và ghi chú chẩn đoán kết quả điều trị hôm nay</p>
+            </div>
+            <button class="btn btn-light text-primary fw-bold rounded-pill px-4" onclick="loadTodayAppointments()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Làm mới danh sách
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card card-premium p-4">
+            <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-lines-fill text-primary me-2"></i>Danh Sách Bệnh Nhân Trong Ngày</h4>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Khám</th>
+                            <th>Khung Giờ (Slot)</th>
+                            <th>Tên Bệnh Nhân</th>
+                            <th>Lý Do Khám</th>
+                            <th>Trạng Thái</th>
+                            <th>Ghi Chú / Chẩn Đoán</th>
+                            <th class="text-center" style="width: 180px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-doctor-workspace">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <div class="spinner-border text-primary me-2" role="status"></div>
+                                Đang tải danh sách bệnh nhân...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Enter Diagnosis Notes & Complete Appointment -->
+<div class="modal fade" id="modalComplete" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold" id="modalCompleteTitle"><i class="bi bi-journal-check text-success me-2"></i>Hoàn Tất Ca Khám</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-complete">
+                    <input type="hidden" id="complete-appointment-id" value="0" />
+                    
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Bệnh nhân:</strong> <span id="complete-patient-name" class="text-primary fw-bold"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Lý do khám:</strong> <span id="complete-reason" class="text-dark"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ghi Chú Kết Quả & Chẩn Đoán Điều Trị <span class="text-danger">*</span></label>
+                        <textarea id="complete-notes" class="form-control" rows="5" required placeholder="Nhập kết quả khám, đơn thuốc chỉ định hoặc lời dặn của bác sĩ..."></textarea>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-check2-circle me-1"></i>Xác Nhận Hoàn Thành
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        loadTodayAppointments();
+    });
+
+    function loadTodayAppointments() {
+        $.ajax({
+            url: `${API_BASE_URL}/DoctorDashboard/appointments/today`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                if (!data || data.length === 0) {
+                    $("#tbody-doctor-workspace").html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-calendar-x me-1"></i>Hôm nay bác sĩ không có ca khám nào.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                const rows = data.map(item => {
+                    let statusBadge = `<span class="badge badge-${item.status.toLowerCase()}">${item.status}</span>`;
+                    
+                    let actionBtn = "";
+                    if (item.status === "CheckedIn") {
+                        actionBtn = `
+                            <button class="btn btn-sm btn-success fw-bold px-3 rounded-pill" onclick="openCompleteModal(${item.appointmentId}, '${escapeQuotes(item.patientName)}', '${escapeQuotes(item.reason)}', '${escapeQuotes(item.notes)}')">
+                                <i class="bi bi-stethoscope me-1"></i>Khám & Kết Quả
+                            </button>
+                        `;
+                    } else if (item.status === "Completed") {
+                        actionBtn = `<span class="badge bg-success"><i class="bi bi-check-all me-1"></i>Đã Khám Xong</span>`;
+                    } else if (item.status === "Confirmed") {
+                        actionBtn = `<span class="text-muted fs-7"><i class="bi bi-clock me-1"></i>Chờ Lễ tân Check-in</span>`;
+                    } else {
+                        actionBtn = `<span class="text-muted fs-7">${item.status}</span>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">#${item.appointmentId}</td>
+                            <td><span class="badge bg-light text-dark fw-bold">${item.startTime} - ${item.endTime}</span></td>
+                            <td class="fw-semibold text-dark">${item.patientName}</td>
+                            <td class="text-truncate" style="max-width: 200px;">${item.reason}</td>
+                            <td>${statusBadge}</td>
+                            <td class="text-truncate" style="max-width: 250px;">
+                                ${item.notes ? `<span class="text-success"><i class="bi bi-journal-text me-1"></i>${item.notes}</span>` : '<span class="text-muted font-italic">Chưa có ghi chú</span>'}
+                            </td>
+                            <td class="text-center">${actionBtn}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $("#tbody-doctor-workspace").html(rows);
+            },
+            error: function(xhr) {
+                alert("Không thể tải danh sách ca khám. Vui lòng đăng nhập với tài khoản Doctor.");
+            }
+        });
+    }
+
+    function escapeQuotes(str) {
+        return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function openCompleteModal(id, patientName, reason, currentNotes) {
+        $("#complete-appointment-id").val(id);
+        $("#complete-patient-name").text(patientName);
+        $("#complete-reason").text(reason);
+        $("#complete-notes").val(currentNotes || "");
+        new bootstrap.Modal('#modalComplete').show();
+    }
+
+    $("#form-complete").on("submit", function(e) {
+        e.preventDefault();
+        const id = parseInt($("#complete-appointment-id").val());
+        const notes = $("#complete-notes").val().trim();
+
+        $.ajax({
+            url: `${API_BASE_URL}/appointments/${id}/complete`,
+            type: "PATCH",
+            headers: getAuthHeaders(),
+            data: JSON.stringify({ notes: notes }),
+            success: function(res) {
+                bootstrap.Modal.getInstance('#modalComplete').hide();
+                loadTodayAppointments();
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON?.message || "Không thể hoàn tất ca khám.");
+            }
+        });
+    });
+</script>
+}
