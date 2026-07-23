@@ -31,6 +31,138 @@ function getAuthHeaders() {
     return headers;
 }
 
+/**
+ * Custom Friendly Alert Modal (Replaces browser alert)
+ */
+function showCustomAlert(message, title = "Thông Báo Hệ Thống", type = "info") {
+    let modalId = "custom-global-alert-modal";
+    let existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    let headerBg = "bg-primary text-white";
+    if (type === "error" || type === "danger") headerBg = "bg-danger text-white";
+    if (type === "success") headerBg = "bg-success text-white";
+    if (type === "warning") headerBg = "bg-warning text-dark";
+
+    const modalHtml = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header ${headerBg} py-3">
+                        <h5 class="modal-title fw-bold fs-6">${title}</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4 fs-6">
+                        ${message}
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-primary-gradient px-4" data-bs-dismiss="modal">Đã Hiểu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalEl = document.getElementById(modalId);
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+}
+
+/**
+ * Custom Friendly Confirm Modal (Replaces browser confirm)
+ */
+function showCustomConfirm(message, onConfirm, title = "Xác Nhận Thao Tác") {
+    let modalId = "custom-global-confirm-modal";
+    let existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    const modalHtml = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-primary text-white py-3">
+                        <h5 class="modal-title fw-bold fs-6">${title}</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4 fs-6">
+                        ${message}
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light px-3 me-2" data-bs-dismiss="modal">Hủy Thao Tác</button>
+                        <button type="button" class="btn btn-danger px-4 fw-bold" id="${modalId}-confirm-btn">Xác Nhận Đồng Ý</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalEl = document.getElementById(modalId);
+    const bsModal = new bootstrap.Modal(modalEl);
+
+    document.getElementById(`${modalId}-confirm-btn`).addEventListener("click", () => {
+        bsModal.hide();
+        if (typeof onConfirm === "function") onConfirm();
+    });
+
+    bsModal.show();
+}
+
+/**
+ * Client-Side Navigation Guard (Role Guard)
+ * @param {Array<string>} allowedRoles Danh sách các vai trò được phép truy cập
+ */
+function requireRole(allowedRoles) {
+    const token = getAuthToken();
+    const user = getCurrentUser();
+
+    if (!token || !user) {
+        window.location.href = "/Auth/Login";
+        return false;
+    }
+
+    if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        showCustomAlert(`Bạn không có quyền truy cập trang này. Yêu cầu quyền: ${allowedRoles.join(', ')}.`, "Quyền Truy Cập Từ Chối", "danger");
+        if (user.role === "Admin") window.location.href = "/Admin/Dashboard";
+        else if (user.role === "Staff") window.location.href = "/Staff/Reception";
+        else if (user.role === "Doctor") window.location.href = "/Doctor/Workspace";
+        else window.location.href = "/";
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Render Admin Sub-Navbar with active link highlighting
+ * @param {string} containerId ID of container element to render nav inside
+ */
+function renderAdminSubNav(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const currentPath = window.location.pathname.toLowerCase();
+
+    const navItems = [
+        { name: "Dashboard", url: "/admin/dashboard" },
+        { name: "Ca Trực Bác Sĩ", url: "/admin/schedules" },
+        { name: "Tạo Tài Khoản", url: "/admin/createaccount" },
+        { name: "Chuyên Khoa", url: "/admin/specializations" },
+        { name: "Bác Sĩ", url: "/admin/doctors" },
+        { name: "Quầy Lễ Tân", url: "/staff/reception" }
+    ];
+
+    let html = '<div class="admin-subnav-container"><ul class="admin-nav">';
+    navItems.forEach(item => {
+        const isActive = currentPath === item.url.toLowerCase() ? "active" : "";
+        html += `<li class="admin-nav-item"><a class="admin-nav-link ${isActive}" href="${item.url}">${item.name}</a></li>`;
+    });
+    html += '</ul></div>';
+
+    container.innerHTML = html;
+}
+
 function renderAuthNav() {
     const user = getCurrentUser();
     const authNavContainer = document.getElementById("auth-nav-container");
@@ -48,35 +180,39 @@ function renderAuthNav() {
         authNavContainer.innerHTML = `
             <li class="nav-item me-2 d-flex align-items-center">
                 <span class="badge ${roleBadgeColor} me-2">${user.role}</span>
-                <span class="fw-semibold text-dark me-3"><i class="bi bi-person-circle me-1"></i>${user.fullName}</span>
+                <a href="/Auth/Profile" class="fw-semibold text-dark text-decoration-none me-3" title="Xem hồ sơ cá nhân">
+                    ${user.fullName}
+                </a>
+            </li>
+            <li class="nav-item me-2">
+                <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="/Auth/Profile">
+                    Hồ Sơ
+                </a>
             </li>
             <li class="nav-item">
-                <button class="btn btn-outline-danger btn-sm rounded-pill" onclick="clearAuthSession()">
-                    <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="clearAuthSession()">
+                    Đăng xuất
                 </button>
             </li>
         `;
 
-        // Render role-specific navigation links
         let roleLinks = "";
         if (user.role === "Admin") {
             roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Admin/Specializations"><i class="bi bi-bookmark-plus me-1"></i>Chuyên khoa</a></li>
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Admin/Doctors"><i class="bi bi-person-badge me-1"></i>Bác sĩ</a></li>
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Staff/Reception"><i class="bi bi-reception-4 me-1"></i>Lễ tân</a></li>
+                <li class="nav-item"><a class="nav-link fw-bold text-primary" href="/Admin/Dashboard">Admin Portal</a></li>
             `;
         } else if (user.role === "Staff") {
             roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Staff/Reception"><i class="bi bi-reception-4 me-1"></i>Quầy Lễ Tân</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="/Staff/Reception">Quầy Lễ Tân</a></li>
             `;
         } else if (user.role === "Doctor") {
             roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Doctor/Workspace"><i class="bi bi-clipboard-pulse me-1"></i>Phòng Khám Bác Sĩ</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="/Doctor/Workspace">Workspace Bác Sĩ</a></li>
             `;
         } else if (user.role === "Patient") {
             roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Patient/Booking"><i class="bi bi-calendar-plus me-1"></i>Đặt Lịch Khám</a></li>
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Patient/History"><i class="bi bi-clock-history me-1"></i>Lịch Sử Cuộc Hẹn</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="/Patient/Booking">Đặt Lịch Khám</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="/Patient/History">Lịch Sử Cuộc Hẹn</a></li>
             `;
         }
         roleNavContainer.innerHTML = roleLinks;
@@ -84,8 +220,8 @@ function renderAuthNav() {
     } else {
         authNavContainer.innerHTML = `
             <li class="nav-item">
-                <a class="btn btn-primary-gradient px-4 rounded-pill" href="/Auth/Login">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Đăng Nhập
+                <a class="btn btn-primary-gradient px-4 rounded-pill fw-semibold" href="/Auth/Login">
+                    Đăng Nhập
                 </a>
             </li>
         `;

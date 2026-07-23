@@ -21,16 +21,15 @@ public class DoctorDashboardService : IDoctorDashboardService
         var doctor = await _context.Doctors.FirstOrDefaultAsync(d => d.UserId == userId);
         if (doctor == null) return Enumerable.Empty<AppointmentDto>();
 
-        var today = DateOnly.FromDateTime(DateTime.Today);
-
         var appointments = await _context.Appointments
             .Include(a => a.Patient).ThenInclude(p => p.User)
             .Include(a => a.Doctor).ThenInclude(d => d.User)
             .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
             .Include(a => a.Schedule)
             .Include(a => a.Staff).ThenInclude(s => s!.User)
-            .Where(a => a.DoctorId == doctor.DoctorId && a.Schedule.SlotDate == today)
-            .OrderBy(a => a.Schedule.StartTime)
+            .Where(a => a.DoctorId == doctor.DoctorId)
+            .OrderBy(a => a.Schedule.SlotDate)
+            .ThenBy(a => a.Schedule.StartTime)
             .ToListAsync();
 
         return appointments.Select(ReceptionService.MapToDto);
@@ -58,6 +57,7 @@ public class DoctorDashboardService : IDoctorDashboardService
 
         appointment.Status = AppointmentStatus.Completed.ToString();
         appointment.Notes = dto.Notes;
+        appointment.AttachmentUrl = dto.AttachmentUrl;
         appointment.CompletedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

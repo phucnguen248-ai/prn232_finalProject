@@ -1,0 +1,594 @@
+@page
+@model ClinicBooking.Web.Pages.Admin.SchedulesModel
+@{
+    ViewData["Title"] = "Quản Lý & Phân Công Ca Trực Bác Sĩ";
+}
+
+<div id="admin-subnav"></div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="hero-section text-white p-4 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="fw-bold mb-1">Quản Lý & Phân Công Ca Trực Bác Sĩ</h2>
+                <p class="mb-0 text-white-50">Lịch phân ca, thiết lập slot khám và duyệt yêu cầu hủy ca trực từ bác sĩ</p>
+            </div>
+            <button class="btn btn-gold px-4 shadow-sm" onclick="openBatchAssignModal()">
+                Phân Công Ca Trực Mới
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Selection -->
+<ul class="nav nav-pills nav-justified mb-4 bg-light p-2 rounded-3" id="admin-schedules-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold py-3 fs-6 rounded-3" id="tab-all-schedules-btn" data-bs-toggle="pill" data-bs-target="#tab-all-schedules" type="button" role="tab">
+            <i class="bi bi-list-columns-reverse me-2 fs-5"></i>1. Tất Cả Ca Trực & Phân Ca
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold py-3 fs-6 rounded-3" id="tab-cancel-requests-btn" data-bs-toggle="pill" data-bs-target="#tab-cancel-requests" type="button" role="tab" onclick="loadCancelRequests()">
+            <i class="bi bi-exclamation-triangle me-2 fs-5"></i>2. Duyệt Yêu Cầu Hủy Slot từ Bác Sĩ
+            <span class="badge bg-danger rounded-pill ms-2" id="badge-cancel-requests-count">0</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="admin-schedules-content">
+    <!-- TAB 1: ALL SCHEDULES -->
+    <div class="tab-pane fade show active" id="tab-all-schedules" role="tabpanel">
+        <!-- Filter Bar -->
+        <div class="card card-premium p-3 mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold fs-7 mb-1">Lọc Theo Chuyên Khoa</label>
+                    <select id="filter-spec" class="form-select form-select-sm" onchange="onFilterSpecChange()">
+                        <option value="">-- Tất cả Chuyên khoa --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold fs-7 mb-1">Lọc Theo Bác Sĩ</label>
+                    <select id="filter-doctor" class="form-select form-select-sm">
+                        <option value="">-- Tất cả Bác sĩ --</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold fs-7 mb-1">Từ Ngày</label>
+                    <input type="date" id="filter-fromdate" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold fs-7 mb-1">Đến Ngày</label>
+                    <input type="date" id="filter-todate" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary-gradient btn-sm w-100 fw-semibold" onclick="loadSchedules()">
+                        <i class="bi bi-search me-1"></i>Tìm Lịch Trực
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Table -->
+        <div class="card card-premium p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Ca</th>
+                            <th>Ngày Trực</th>
+                            <th>Khung Giờ (Slot)</th>
+                            <th>Tên Bác Sĩ</th>
+                            <th>Chuyên Khoa</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-center" style="width: 120px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-schedules">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <div class="spinner-border text-primary me-2" role="status"></div>
+                                Đang tải danh sách ca trực bác sĩ...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: PENDING CANCEL REQUESTS MODERATION -->
+    <div class="tab-pane fade" id="tab-cancel-requests" role="tabpanel">
+        <div class="card card-premium p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Danh Sách Yêu Cầu Xin Hủy Slot Đang Chờ Duyệt</h4>
+                <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="loadCancelRequests()">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Làm mới
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Ca</th>
+                            <th>Bác Sĩ Xin Hủy</th>
+                            <th>Chuyên Khoa</th>
+                            <th>Ngày & Khung Giờ Slot</th>
+                            <th>Lý Do Xin Hủy</th>
+                            <th>Thời Gian Gửi</th>
+                            <th class="text-center" style="width: 200px;">Thao Tác Kiểm Duyệt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-cancel-requests">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <div class="spinner-border text-primary me-2" role="status"></div>
+                                Đang tải danh sách yêu cầu hủy slot...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Batch Assign Schedule -->
+<div class="modal fade" id="modalBatchAssign" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus text-primary me-2"></i>Phân Công Ca Trực Bác Sĩ Tự Động</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="batch-alert" class="alert alert-danger d-none mb-3"></div>
+
+                <form id="form-batch-assign">
+                    <!-- Step 1: Doctor & Specialization Selection -->
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-1-circle me-2"></i>Bước 1: Chọn Chuyên Khoa & Bác Sĩ</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chọn Chuyên Khoa <span class="text-danger">*</span></label>
+                                <select id="modal-spec" class="form-select" onchange="onModalSpecChange()" required>
+                                    <option value="">-- Chọn Chuyên Khoa --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chọn Bác Sĩ Đảm Nhận <span class="text-danger">*</span></label>
+                                <select id="modal-doctor" class="form-select" required>
+                                    <option value="">-- Chọn Bác Sĩ --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Date Range Selection -->
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-2-circle me-2"></i>Bước 2: Chọn Khoảng Ngày Phân Ca</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Từ Ngày <span class="text-danger">*</span></label>
+                                <input type="date" id="modal-fromdate" class="form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Đến Ngày <span class="text-danger">*</span></label>
+                                <input type="date" id="modal-todate" class="form-control" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Shift & Slot Selection -->
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="fw-bold text-primary mb-0"><i class="bi bi-3-circle me-2"></i>Bước 3: Chọn Ca Trực & Khung Giờ (Slot)</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" onclick="selectShift('morning')">
+                                    <i class="bi bi-sun me-1"></i>Ca Sáng (08h - 12h)
+                                </button>
+                                <button type="button" class="btn btn-outline-warning text-dark" onclick="selectShift('afternoon')">
+                                    <i class="bi bi-sunset me-1"></i>Ca Chiều (13h - 17h)
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="selectShift('all')">
+                                    <i class="bi bi-check-all me-1"></i>Cả Ngày
+                                </button>
+                            </div>
+                        </div>
+
+                        <label class="form-label fw-semibold mb-2">Danh sách các Slot (45 phút khám + 15 phút nghỉ giữa các slot):</label>
+                        <div class="row g-2" id="slot-container">
+                            <!-- Morning Slots -->
+                            <div class="col-md-6">
+                                <div class="p-2 border rounded bg-white">
+                                    <strong class="text-primary d-block mb-2"><i class="bi bi-brightness-high me-1"></i>Ca Sáng:</strong>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-morning" type="checkbox" value="08:00-09:00" id="slot-1">
+                                        <label class="form-check-label fw-semibold" for="slot-1">08:00 - 09:00</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-morning" type="checkbox" value="09:00-10:00" id="slot-2">
+                                        <label class="form-check-label fw-semibold" for="slot-2">09:00 - 10:00</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-morning" type="checkbox" value="10:00-11:00" id="slot-3">
+                                        <label class="form-check-label fw-semibold" for="slot-3">10:00 - 11:00</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-morning" type="checkbox" value="11:00-12:00" id="slot-4">
+                                        <label class="form-check-label fw-semibold" for="slot-4">11:00 - 12:00</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Afternoon Slots -->
+                            <div class="col-md-6">
+                                <div class="p-2 border rounded bg-white">
+                                    <strong class="text-warning d-block mb-2"><i class="bi bi-moon-stars me-1"></i>Ca Chiều:</strong>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-afternoon" type="checkbox" value="13:00-14:00" id="slot-5">
+                                        <label class="form-check-label fw-semibold" for="slot-5">13:00 - 14:00</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-afternoon" type="checkbox" value="14:00-15:00" id="slot-6">
+                                        <label class="form-check-label fw-semibold" for="slot-6">14:00 - 15:00</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-afternoon" type="checkbox" value="15:00-16:00" id="slot-7">
+                                        <label class="form-check-label fw-semibold" for="slot-7">15:00 - 16:00</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input slot-checkbox slot-afternoon" type="checkbox" value="16:00-17:00" id="slot-8">
+                                        <label class="form-check-label fw-semibold" for="slot-8">16:00 - 17:00</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary-gradient px-4 fw-bold">
+                            <i class="bi bi-check-circle me-1"></i>Lưu & Tạo Ca Trực
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let allDoctorsCache = [];
+
+    $(document).ready(function() {
+        if (!requireRole(['Admin'])) return;
+        renderAdminSubNav("admin-subnav");
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        $("#filter-fromdate").attr("min", todayStr).val(todayStr);
+        $("#filter-todate").attr("min", todayStr);
+        $("#modal-fromdate").attr("min", todayStr);
+        $("#modal-todate").attr("min", todayStr);
+
+        $("#filter-fromdate, #filter-todate, #modal-fromdate, #modal-todate").on("change", function() {
+            if ($(this).val() && $(this).val() < todayStr) {
+                showCustomAlert("Không thể chọn ngày trong quá khứ cho ca trực. Vui lòng chọn từ ngày hôm nay trở đi!", "Cảnh Báo Ngày Khám", "warning");
+                $(this).val(todayStr);
+            }
+        });
+
+        loadFilterOptions();
+        loadSchedules();
+        loadCancelRequests();
+    });
+
+    function loadFilterOptions() {
+        $.ajax({
+            url: `${API_BASE_URL}/specializations`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                let options = '<option value="">-- Tất cả Chuyên khoa --</option>';
+                let modalOptions = '<option value="">-- Chọn Chuyên Khoa --</option>';
+                if (data && data.length > 0) {
+                    data.forEach(s => {
+                        options += `<option value="${s.specializationId}">${s.name}</option>`;
+                        modalOptions += `<option value="${s.specializationId}">${s.name}</option>`;
+                    });
+                }
+                $("#filter-spec").html(options);
+                $("#modal-spec").html(modalOptions);
+            }
+        });
+
+        $.ajax({
+            url: `${API_BASE_URL}/doctors/list`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                allDoctorsCache = data || [];
+                renderFilterDoctors();
+            }
+        });
+    }
+
+    function renderFilterDoctors() {
+        const specId = parseInt($("#filter-spec").val());
+        let filtered = allDoctorsCache;
+        if (specId > 0) {
+            filtered = allDoctorsCache.filter(d => d.specializationId === specId);
+        }
+
+        let options = '<option value="">-- Tất cả Bác sĩ --</option>';
+        filtered.forEach(d => {
+            options += `<option value="${d.doctorId}">${d.fullName} (${d.specializationName})</option>`;
+        });
+        $("#filter-doctor").html(options);
+    }
+
+    function onFilterSpecChange() {
+        renderFilterDoctors();
+        loadSchedules();
+    }
+
+    function onModalSpecChange() {
+        const specId = parseInt($("#modal-spec").val());
+        let filtered = allDoctorsCache;
+        if (specId > 0) {
+            filtered = allDoctorsCache.filter(d => d.specializationId === specId);
+        }
+
+        let options = '<option value="">-- Chọn Bác Sĩ --</option>';
+        filtered.forEach(d => {
+            options += `<option value="${d.doctorId}">${d.fullName}</option>`;
+        });
+        $("#modal-doctor").html(options);
+    }
+
+    function loadSchedules() {
+        const specId = $("#filter-spec").val();
+        const docId = $("#filter-doctor").val();
+        const fromDate = $("#filter-fromdate").val();
+        const toDate = $("#filter-todate").val();
+
+        let queryParams = [];
+        if (specId) queryParams.push(`specializationId=${specId}`);
+        if (docId) queryParams.push(`doctorId=${docId}`);
+        if (fromDate) queryParams.push(`fromDate=${fromDate}`);
+        if (toDate) queryParams.push(`toDate=${toDate}`);
+
+        const url = `${API_BASE_URL}/schedules` + (queryParams.length > 0 ? `?${queryParams.join('&')}` : '');
+
+        $.ajax({
+            url: url,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                if (!data || data.length === 0) {
+                    $("#tbody-schedules").html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-calendar-x me-1"></i>Không tìm thấy ca trực nào phù hợp với bộ lọc.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                const rows = data.map(item => {
+                    let badgeClass = "bg-secondary";
+                    let statusLabel = item.status;
+
+                    if (item.status === "Available") {
+                        badgeClass = "bg-success";
+                        statusLabel = "Con Trống";
+                    } else if (item.status === "Booked") {
+                        badgeClass = "bg-warning text-dark";
+                        statusLabel = "Đã Đặt";
+                    } else if (item.status === "CancelRequested") {
+                        badgeClass = "bg-danger";
+                        statusLabel = "Bác Sĩ Xin Hủy";
+                    } else if (item.status === "Cancelled") {
+                        badgeClass = "bg-dark";
+                        statusLabel = "Đã Hủy";
+                    }
+
+                    let deleteBtn = "";
+                    if (item.status === "Available") {
+                        deleteBtn = `
+                            <button class="btn btn-sm btn-outline-danger" title="Xóa ca trực" onclick="deleteSchedule(${item.scheduleId})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    } else {
+                        deleteBtn = `<span class="text-muted fs-7"><i class="bi bi-lock-fill"></i></span>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">#${item.scheduleId}</td>
+                            <td class="fw-semibold text-primary">${item.slotDate}</td>
+                            <td><span class="badge bg-light text-dark border fw-bold">${item.startTime} - ${item.endTime}</span></td>
+                            <td class="fw-bold">${item.doctorName}</td>
+                            <td><span class="badge bg-info text-dark">${item.specializationName}</span></td>
+                            <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+                            <td class="text-center">${deleteBtn}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $("#tbody-schedules").html(rows);
+            }
+        });
+    }
+
+    function loadCancelRequests() {
+        $.ajax({
+            url: `${API_BASE_URL}/schedules/cancel-requests`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                const count = data ? data.length : 0;
+                $("#badge-cancel-requests-count").text(count);
+
+                if (!data || data.length === 0) {
+                    $("#tbody-cancel-requests").html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-check-circle me-1"></i>Hiện không có yêu cầu xin hủy slot ca trực nào từ Bác sĩ.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                const rows = data.map(item => `
+                    <tr>
+                        <td class="fw-bold">#${item.scheduleId}</td>
+                        <td class="fw-bold text-primary">${item.doctorName}</td>
+                        <td><span class="badge bg-info text-dark">${item.specializationName}</span></td>
+                        <td>
+                            <strong class="text-dark">${item.slotDate}</strong><br/>
+                            <span class="badge bg-light text-dark border">${item.startTime} - ${item.endTime}</span>
+                        </td>
+                        <td><span class="text-danger fw-semibold"><i class="bi bi-chat-left-quote me-1"></i>${item.cancelReason}</span></td>
+                        <td class="fs-7 text-muted">${new Date(item.cancelRequestedAt).toLocaleString('vi-VN')}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-success fw-bold me-1 px-2" onclick="approveCancel(${item.scheduleId})">
+                                <i class="bi bi-check-lg me-1"></i>Duyệt Hủy
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary fw-bold px-2" onclick="rejectCancel(${item.scheduleId})">
+                                <i class="bi bi-x-lg me-1"></i>Từ Chối
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                $("#tbody-cancel-requests").html(rows);
+            }
+        });
+    }
+
+    function approveCancel(id) {
+        showCustomConfirm("Bạn có chắc chắn muốn DUYỆT HỦY ca trực này của bác sĩ?", function() {
+            $.ajax({
+                url: `${API_BASE_URL}/schedules/${id}/approve-cancel`,
+                type: "POST",
+                headers: getAuthHeaders(),
+                success: function(res) {
+                    showCustomAlert(res.message, "Thành Công", "success");
+                    loadCancelRequests();
+                    loadSchedules();
+                },
+                error: function(xhr) {
+                    showCustomAlert(xhr.responseJSON?.message || "Không thể duyệt hủy ca trực.", "Lỗi", "error");
+                }
+            });
+        }, "Xác Nhận Duyệt Hủy Ca Trực");
+    }
+
+    function rejectCancel(id) {
+        showCustomConfirm("Bạn có chắc chắn muốn TỪ CHỐI yêu cầu hủy ca trực này?", function() {
+            $.ajax({
+                url: `${API_BASE_URL}/schedules/${id}/reject-cancel`,
+                type: "POST",
+                headers: getAuthHeaders(),
+                success: function(res) {
+                    showCustomAlert(res.message, "Thành Công", "info");
+                    loadCancelRequests();
+                    loadSchedules();
+                },
+                error: function(xhr) {
+                    showCustomAlert(xhr.responseJSON?.message || "Không thể từ chối yêu cầu.", "Lỗi", "error");
+                }
+            });
+        }, "Xác Nhận Từ Chối Yêu Cầu");
+    }
+
+    function openBatchAssignModal() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        $("#modal-fromdate").val(todayStr);
+        $("#modal-todate").val(todayStr);
+        selectShift('morning');
+        $("#batch-alert").addClass("d-none").text("");
+        new bootstrap.Modal('#modalBatchAssign').show();
+    }
+
+    function selectShift(type) {
+        if (type === 'morning') {
+            $(".slot-morning").prop("checked", true);
+            $(".slot-afternoon").prop("checked", false);
+        } else if (type === 'afternoon') {
+            $(".slot-morning").prop("checked", false);
+            $(".slot-afternoon").prop("checked", true);
+        } else if (type === 'all') {
+            $(".slot-checkbox").prop("checked", true);
+        }
+    }
+
+    $("#form-batch-assign").on("submit", function(e) {
+        e.preventDefault();
+        $("#batch-alert").addClass("d-none").text("");
+
+        const doctorId = parseInt($("#modal-doctor").val());
+        const fromDate = $("#modal-fromdate").val();
+        const toDate = $("#modal-todate").val();
+
+        let selectedSlots = [];
+        $(".slot-checkbox:checked").each(function() {
+            const val = $(this).val().split('-');
+            selectedSlots.push({
+                startTime: val[0] + ":00",
+                endTime: val[1] + ":00"
+            });
+        });
+
+        if (selectedSlots.length === 0) {
+            $("#batch-alert").removeClass("d-none").text("Vui lòng chọn ít nhất một Slot ca trực.");
+            return;
+        }
+
+        const payload = {
+            doctorId: doctorId,
+            fromDate: fromDate,
+            toDate: toDate,
+            selectedSlots: selectedSlots
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/schedules/batch-assign`,
+            type: "POST",
+            headers: getAuthHeaders(),
+            data: JSON.stringify(payload),
+            success: function(res) {
+                bootstrap.Modal.getInstance('#modalBatchAssign').hide();
+                showCustomAlert(res.message, "Phân Ca Thành Công", "success");
+                loadSchedules();
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || "Không thể phân công ca trực.";
+                $("#batch-alert").removeClass("d-none").text(msg);
+            }
+        });
+    });
+
+    function deleteSchedule(id) {
+        showCustomConfirm("Bạn có chắc chắn muốn xóa ca trực này?", function() {
+            $.ajax({
+                url: `${API_BASE_URL}/schedules/${id}`,
+                type: "DELETE",
+                headers: getAuthHeaders(),
+                success: function(res) {
+                    showCustomAlert("Đã xóa ca trực thành công.", "Thành Công", "success");
+                    loadSchedules();
+                },
+                error: function(xhr) {
+                    showCustomAlert(xhr.responseJSON?.message || "Không thể xóa ca trực.", "Lỗi", "error");
+                }
+            });
+        }, "Xóa Ca Trực");
+    }
+</script>
+}

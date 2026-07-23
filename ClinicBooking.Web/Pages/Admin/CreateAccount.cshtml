@@ -1,0 +1,224 @@
+@page
+@model ClinicBooking.Web.Pages.Admin.CreateAccountModel
+@{
+    ViewData["Title"] = "Tạo Tài Khoản Nội Bộ";
+}
+
+<div id="admin-subnav"></div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-1">Tạo Tài Khoản Nhân Sự Nội Bộ</h2>
+                <p class="text-muted mb-0">Cấp tài khoản mới cho Bác sĩ hoặc Nhân viên Lễ tân phòng khám</p>
+            </div>
+            <a href="/Admin/Dashboard" class="btn btn-outline-secondary rounded-pill px-4">
+                Quay về Dashboard
+            </a>
+        </div>
+
+        <div class="card card-premium p-4">
+            <!-- Choice Selector Tabs -->
+            <ul class="nav nav-pills nav-justified mb-4 bg-light p-2 rounded-3" id="account-type-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold py-3 fs-6 rounded-3" id="tab-doctor-btn" data-bs-toggle="pill" data-bs-target="#tab-doctor" type="button" role="tab">
+                        <i class="bi bi-person-badge me-2 fs-5"></i>1. Lựa Chọn: Tạo Tài Khoản Bác Sĩ
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold py-3 fs-6 rounded-3" id="tab-staff-btn" data-bs-toggle="pill" data-bs-target="#tab-staff" type="button" role="tab">
+                        <i class="bi bi-person-workspace me-2 fs-5"></i>2. Lựa Chọn: Tạo Tài Khoản Lễ Tân
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="account-tab-content">
+                <!-- TAB 1: CREATE DOCTOR ACCOUNT -->
+                <div class="tab-pane fade show active" id="tab-doctor" role="tabpanel">
+                    <div class="alert alert-info border-0 mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>Tài khoản Bác sĩ sẽ có quyền truy cập vào <strong>Workspace Bác Sĩ</strong> (`/Doctor/Workspace`) để xem ca khám và ghi nhận kết quả chẩn đoán.
+                    </div>
+
+                    <div id="doctor-alert" class="alert alert-danger d-none mb-3"></div>
+
+                    <form id="form-create-doctor">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Họ và Tên Bác Sĩ <span class="text-danger">*</span></label>
+                                <input type="text" id="doc-fullname" class="form-control" placeholder="BS. Nguyễn Văn A" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email Đăng Nhập <span class="text-danger">*</span></label>
+                                <input type="email" id="doc-email" class="form-control" placeholder="doctor1@clinic.com" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Mật Khẩu <span class="text-danger">*</span></label>
+                                <input type="password" id="doc-password" class="form-control" placeholder="•••••••• (Tối thiểu 6 ký tự)" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số Điện Thoại <span class="text-danger">*</span></label>
+                                <input type="text" id="doc-phone" class="form-control" placeholder="0912345678" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chuyên Khoa Đảm Nhận <span class="text-danger">*</span></label>
+                                <select id="doc-spec" class="form-select" required>
+                                    <option value="">-- Đang tải danh sách chuyên khoa... --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Số Giấy Phép <span class="text-danger">*</span></label>
+                                <input type="text" id="doc-license" class="form-control" placeholder="MED-LIC-001" required />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Kinh Nghiệm (Năm)</label>
+                                <input type="number" id="doc-exp" class="form-control" value="5" min="0" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Tóm Tắt Giới Thiệu (Bio)</label>
+                                <textarea id="doc-bio" class="form-control" rows="3" placeholder="Chuyên gia tim mạch và nội khoa tổng quát với 10 năm kinh nghiệm..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <button type="reset" class="btn btn-light me-2">Nhập Lại</button>
+                            <button type="submit" class="btn btn-primary-gradient px-4">
+                                <i class="bi bi-person-check me-1"></i>Tạo Tài Khoản Bác Sĩ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- TAB 2: CREATE STAFF ACCOUNT -->
+                <div class="tab-pane fade" id="tab-staff" role="tabpanel">
+                    <div class="alert alert-warning border-0 mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>Tài khoản Lễ tân sẽ có quyền truy cập vào <strong>Quầy Lễ Tân</strong> (`/Staff/Reception`) để tìm kiếm bệnh nhân, Check-in và đánh dấu No-Show.
+                    </div>
+
+                    <div id="staff-alert" class="alert alert-danger d-none mb-3"></div>
+
+                    <form id="form-create-staff">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Họ và Tên Nhân Viên <span class="text-danger">*</span></label>
+                                <input type="text" id="staff-fullname" class="form-control" placeholder="Nguyễn Thị Mai" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email Đăng Nhập <span class="text-danger">*</span></label>
+                                <input type="email" id="staff-email" class="form-control" placeholder="staff1@clinic.com" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Mật Khẩu <span class="text-danger">*</span></label>
+                                <input type="password" id="staff-password" class="form-control" placeholder="•••••••• (Tối thiểu 6 ký tự)" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số Điện Thoại <span class="text-danger">*</span></label>
+                                <input type="text" id="staff-phone" class="form-control" placeholder="0911111111" required />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Chức Vụ Đảm Nhận <span class="text-danger">*</span></label>
+                                <input type="text" id="staff-position" class="form-control" placeholder="Lễ tân sảnh chính / Nhân viên đón tiếp" value="Lễ tân" required />
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <button type="reset" class="btn btn-light me-2">Nhập Lại</button>
+                            <button type="submit" class="btn btn-warning fw-bold px-4">
+                                <i class="bi bi-person-check me-1"></i>Tạo Tài Khoản Lễ Tân
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        if (!requireRole(['Admin'])) return;
+        renderAdminSubNav("admin-subnav");
+
+        loadSpecializations();
+    });
+
+    function loadSpecializations() {
+        $.ajax({
+            url: `${API_BASE_URL}/specializations`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                let options = '<option value="">-- Chọn Chuyên Khoa --</option>';
+                if (data && data.length > 0) {
+                    data.forEach(s => {
+                        options += `<option value="${s.specializationId}">${s.name}</option>`;
+                    });
+                }
+                $("#doc-spec").html(options);
+            }
+        });
+    }
+
+    // Submit Create Doctor Form
+    $("#form-create-doctor").on("submit", function(e) {
+        e.preventDefault();
+        $("#doctor-alert").addClass("d-none").text("");
+
+        const payload = {
+            email: $("#doc-email").val().trim(),
+            password: $("#doc-password").val(),
+            fullName: $("#doc-fullname").val().trim(),
+            phoneNumber: $("#doc-phone").val().trim(),
+            specializationId: parseInt($("#doc-spec").val()),
+            licenseNumber: $("#doc-license").val().trim(),
+            yearsOfExperience: parseInt($("#doc-exp").val()),
+            bio: $("#doc-bio").val().trim()
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/doctors`,
+            type: "POST",
+            headers: getAuthHeaders(),
+            data: JSON.stringify(payload),
+            success: function(res) {
+                alert(`Tạo thành công tài khoản Bác sĩ: ${res.fullName} (${res.email})`);
+                window.location.href = "/Admin/Doctors";
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || "Không thể tạo tài khoản Bác sĩ.";
+                $("#doctor-alert").removeClass("d-none").text(msg);
+            }
+        });
+    });
+
+    // Submit Create Staff Form
+    $("#form-create-staff").on("submit", function(e) {
+        e.preventDefault();
+        $("#staff-alert").addClass("d-none").text("");
+
+        const payload = {
+            email: $("#staff-email").val().trim(),
+            password: $("#staff-password").val(),
+            fullName: $("#staff-fullname").val().trim(),
+            phoneNumber: $("#staff-phone").val().trim(),
+            position: $("#staff-position").val().trim()
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/staff`,
+            type: "POST",
+            headers: getAuthHeaders(),
+            data: JSON.stringify(payload),
+            success: function(res) {
+                alert(`Tạo thành công tài khoản Nhân viên Lễ tân: ${res.fullName} (${res.email})`);
+                window.location.href = "/Admin/Dashboard";
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || "Không thể tạo tài khoản Lễ tân.";
+                $("#staff-alert").removeClass("d-none").text(msg);
+            }
+        });
+    });
+</script>
+}

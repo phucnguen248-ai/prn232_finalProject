@@ -62,7 +62,6 @@ public class AuthService : IAuthService
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
-        // If registering as Patient, create Patient profile
         if (user.Role == UserRole.Patient.ToString())
         {
             var patient = new Patient
@@ -96,6 +95,139 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<UserProfileDto?> GetUserProfileAsync(int userId)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        if (user == null) return null;
+
+        var dto = new UserProfileDto
+        {
+            UserId = user.UserId,
+            Email = user.Email,
+            FullName = user.FullName,
+            PhoneNumber = user.PhoneNumber,
+            Role = user.Role
+        };
+
+        if (user.Role == UserRole.Patient.ToString())
+        {
+            var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == userId);
+            if (patient != null)
+            {
+                dto.DateOfBirth = patient.DateOfBirth;
+                dto.Gender = patient.Gender;
+                dto.Address = patient.Address;
+            }
+        }
+        else if (user.Role == UserRole.Doctor.ToString())
+        {
+            var doctor = await _context.Doctors
+                .Include(d => d.Specialization)
+                .FirstOrDefaultAsync(d => d.UserId == userId);
+
+            if (doctor != null)
+            {
+                dto.SpecializationName = doctor.Specialization?.Name ?? string.Empty;
+                dto.LicenseNumber = doctor.LicenseNumber;
+                dto.YearsOfExperience = doctor.YearsOfExperience;
+                dto.Bio = doctor.Bio;
+            }
+        }
+        else if (user.Role == UserRole.Staff.ToString())
+        {
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (staff != null)
+            {
+                dto.Position = staff.Position;
+            }
+        }
+
+        return dto;
+    }
+
+    public async Task<UserProfileDto> UpdateUserProfileAsync(int userId, UpdateProfileDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Không tìm thấy thông tin tài khoản.");
+        }
+
+        // Update User info
+        user.FullName = dto.FullName;
+        user.PhoneNumber = dto.PhoneNumber;
+
+        // Change password if provided
+        if (!string.IsNullOrEmpty(dto.NewPassword))
+        {
+            if (string.IsNullOrEmpty(dto.CurrentPassword) || !BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            {
+                throw new InvalidOperationException("Mật khẩu hiện tại không chính xác.");
+            }
+
+            if (dto.NewPassword.Length < 6)
+            {
+                throw new InvalidOperationException("Mật khẩu mới phải từ 6 ký tự trở lên.");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        }
+
+        // Update role-specific profile
+        if (user.Role == UserRole.Patient.ToString())
+        {
+            var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == userId);
+            if (patient != null)
+            {
+                if (dto.DateOfBirth.HasValue) patient.DateOfBirth = dto.DateOfBirth.Value;
+                if (!string.IsNullOrEmpty(dto.Gender)) patient.Gender = dto.Gender;
+                if (dto.Address != null) patient.Address = dto.Address;
+            }
+        }
+        else if (user.Role == UserRole.Doctor.ToString())
+        {
+            var doctor = await _context.Doctors.FirstOrDefaultAsync(d => d.UserId == userId);
+            if (doctor != null)
+            {
+                if (dto.YearsOfExperience.HasValue) doctor.YearsOfExperience = dto.YearsOfExperience.Value;
+                if (dto.Bio != null) doctor.Bio = dto.Bio;
+            }
+        }
+        else if (user.Role == UserRole.Staff.ToString())
+        {
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.UserId == userId);
+            if (staff != null)
+            {
+                if (!string.IsNullOrEmpty(dto.Position)) staff.Position = dto.Position;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return (await GetUserProfileAsync(userId))!;
+    }
+
+    public async Task<bool> ForgotPasswordResetAsync(ForgotPasswordDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => 
+            u.Email.ToLower() == dto.Email.Trim().ToLower() && 
+            u.PhoneNumber.Trim() == dto.PhoneNumber.Trim());
+
+        if (user == null || !user.IsActive)
+        {
+            throw new InvalidOperationException("Thông tin Email hoặc Số điện thoại không xác thực được.");
+        }
+
+        if (string.IsNullOrEmpty(dto.NewPassword) || dto.NewPassword.Length < 6)
+        {
+            throw new InvalidOperationException("Mật khẩu mới phải từ 6 ký tự trở lên.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private AuthResponseDto GenerateAuthResponse(User user)
     {
         var secretKey = _configuration["JwtSettings:SecretKey"] ?? "ClinicAppointmentBookingSuperSecretKey2026SecureJwtTokenKey!";
@@ -111,7 +243,8 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.FullName),
-            new Claim(ClaimTypes.Role, user.Role)
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("role", user.Role)
         };
 
         var expiration = DateTime.UtcNow.AddMinutes(expiryMinutes);

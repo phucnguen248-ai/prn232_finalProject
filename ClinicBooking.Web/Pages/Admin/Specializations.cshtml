@@ -4,13 +4,15 @@
     ViewData["Title"] = "Quản Lý Chuyên Khoa";
 }
 
+<div id="admin-subnav"></div>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-bookmark-plus text-primary me-2"></i>Quản Lý Chuyên Khoa</h2>
+        <h2 class="fw-bold text-dark mb-1">Quản Lý Chuyên Khoa</h2>
         <p class="text-muted mb-0">Quản lý danh sách các chuyên khoa khám bệnh và OData API filter</p>
     </div>
-    <button class="btn btn-primary-gradient" onclick="openCreateModal()">
-        <i class="bi bi-plus-lg me-1"></i>Thêm Chuyên Khoa Mới
+    <button class="btn btn-primary-gradient px-4" onclick="openCreateModal()">
+        Thêm Chuyên Khoa Mới
     </button>
 </div>
 
@@ -66,6 +68,9 @@
     let specTable;
 
     $(document).ready(function () {
+        if (!requireRole(['Admin'])) return;
+        renderAdminSubNav("admin-subnav");
+
         loadSpecializations();
     });
 
@@ -85,11 +90,11 @@
                         <td class="fw-semibold text-primary">${item.name}</td>
                         <td>${item.description || '<span class="text-muted font-italic">Chưa có mô tả</span>'}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary me-1 rounded-circle" onclick="openEditModal(${item.specializationId}, '${escapeQuotes(item.name)}', '${escapeQuotes(item.description)}')">
-                                <i class="bi bi-pencil"></i>
+                            <button class="btn btn-sm btn-outline-primary me-1 px-2" title="Chỉnh sửa" onclick="openEditModal(${item.specializationId}, '${escapeQuotes(item.name)}', '${escapeQuotes(item.description)}')">
+                                Sửa
                             </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteSpec(${item.specializationId})">
-                                <i class="bi bi-trash"></i>
+                            <button class="btn btn-sm btn-outline-danger px-2" title="Xóa" onclick="deleteSpec(${item.specializationId})">
+                                Xóa
                             </button>
                         </td>
                     </tr>

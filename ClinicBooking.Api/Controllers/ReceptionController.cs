@@ -82,7 +82,9 @@ public class ReceptionController : ControllerBase
 
     private int GetCurrentUserId()
     {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                 ?? User.FindFirst("sub")?.Value 
+                 ?? User.FindFirst("nameid")?.Value;
         return int.TryParse(claim, out int id) ? id : 0;
     }
 }

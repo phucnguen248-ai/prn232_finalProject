@@ -1,13 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    --primary-blue: #1e40af;
+    --secondary-blue: #2563eb;
+    --light-blue: #eff6ff;
+    --accent-gold: #f59e0b;
+    --dark-gold: #d97706;
+    --light-gold: #fef3c7;
     --bg-light: #f8fafc;
     --text-dark: #0f172a;
     --text-muted: #64748b;
-    --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    --card-shadow: 0 8px 20px -4px rgba(30, 64, 175, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
 body {
@@ -17,55 +20,143 @@ body {
     line-height: 1.6;
 }
 
-.navbar-brand-gradient {
-    background: var(--primary-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 800;
-    font-size: 1.4rem;
+/* Header & Brand Navbar */
+.navbar-custom {
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-bottom: 3px solid var(--accent-gold);
 }
 
+.navbar-brand-custom {
+    color: var(--primary-blue);
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+}
+
+.navbar-brand-custom span {
+    color: var(--accent-gold);
+}
+
+/* ADMIN SUB-NAVBAR WITH HIGHLIGHT */
+.admin-subnav-container {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: var(--card-shadow);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1.5rem;
+}
+
+.admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-nav-item {
+    margin: 0;
+}
+
+.admin-nav-link {
+    display: block;
+    padding: 0.6rem 1.2rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.admin-nav-link:hover {
+    background-color: var(--light-blue);
+    color: var(--primary-blue);
+}
+
+/* HIGHLIGHT ACTIVE ITEM */
+.admin-nav-link.active {
+    background-color: var(--primary-blue) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+    border-bottom: 3px solid var(--accent-gold);
+    font-weight: 700;
+}
+
+/* Cards & Containers */
 .card-premium {
-    border: none;
-    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
     background: #ffffff;
     box-shadow: var(--card-shadow);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-premium:hover {
-    box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 12px 24px -6px rgba(30, 64, 175, 0.12);
 }
 
+/* Primary Buttons - Blue & Gold Accent */
 .btn-primary-gradient {
-    background: var(--primary-gradient);
-    border: none;
+    background-color: var(--primary-blue);
+    border: 1px solid var(--primary-blue);
     color: #ffffff;
     font-weight: 600;
-    border-radius: 10px;
-    padding: 0.6rem 1.4rem;
-    transition: opacity 0.2s ease;
+    border-radius: 8px;
+    padding: 0.55rem 1.3rem;
+    transition: all 0.2s ease;
 }
 
 .btn-primary-gradient:hover {
-    opacity: 0.92;
+    background-color: var(--secondary-blue);
+    border-color: var(--secondary-blue);
     color: #ffffff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.btn-gold {
+    background-color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+    color: #0f172a;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.55rem 1.3rem;
+    transition: all 0.2s ease;
+}
+
+.btn-gold:hover {
+    background-color: var(--dark-gold);
+    border-color: var(--dark-gold);
+    color: #ffffff;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, #1e3a8a 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 2.2rem 2rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 4px solid var(--accent-gold);
 }
 
 /* Status Badges */
 .badge-confirmed {
-    background-color: #e0f2fe;
-    color: #0369a1;
+    background-color: #dbeafe;
+    color: #1e40af;
     font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 20px;
 }
 
 .badge-checkedin {
-    background-color: #fef3c7;
-    color: #b45309;
+    background-color: var(--light-gold);
+    color: var(--dark-gold);
     font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 20px;
 }
 
@@ -73,7 +164,7 @@ body {
     background-color: #dcfce7;
     color: #15803d;
     font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 20px;
 }
 
@@ -81,7 +172,7 @@ body {
     background-color: #fee2e2;
     color: #b91c1c;
     font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 20px;
 }
 
@@ -89,25 +180,13 @@ body {
     background-color: #f3e8ff;
     color: #6b21a8;
     font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 20px;
 }
 
-.badge-available {
-    background-color: #dcfce7;
-    color: #166534;
-    font-weight: 600;
-}
-
-.badge-booked {
-    background-color: #fee2e2;
-    color: #991b1b;
-    font-weight: 600;
-}
-
-/* DataTables Styling Overrides */
+/* DataTables Styling */
 .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    background: var(--primary-gradient) !important;
+    background: var(--primary-blue) !important;
     color: #ffffff !important;
     border: none !important;
     border-radius: 6px !important;
@@ -117,12 +196,4 @@ table.dataTable th {
     font-weight: 600;
     color: var(--text-muted);
     border-bottom: 2px solid #e2e8f0 !important;
-}
-
-.hero-section {
-    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-    color: #ffffff;
-    border-radius: 24px;
-    padding: 3rem 2rem;
-    margin-bottom: 2rem;
 }

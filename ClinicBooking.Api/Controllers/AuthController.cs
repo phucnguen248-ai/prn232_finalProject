@@ -63,11 +63,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMe()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-        {
-            return Unauthorized();
-        }
+        int userId = GetCurrentUserId();
+        if (userId <= 0) return Unauthorized();
 
         var user = await _authService.GetUserByIdAsync(userId);
         if (user == null)
@@ -76,5 +73,74 @@ public class AuthController : ControllerBase
         }
 
         return Ok(user);
+    }
+
+    /// <summary>
+    /// Xem chi tiết sơ yếu lý lịch cá nhân theo quyền (Bác sĩ, Bệnh nhân, Lễ tân, Admin)
+    /// </summary>
+    [HttpGet("profile")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProfile()
+    {
+        int userId = GetCurrentUserId();
+        if (userId <= 0) return Unauthorized();
+
+        var profile = await _authService.GetUserProfileAsync(userId);
+        if (profile == null) return NotFound(new { message = "Không tìm thấy thông tin sơ yếu lý lịch." });
+
+        return Ok(profile);
+    }
+
+    /// <summary>
+    /// Cập nhật hồ sơ sơ yếu lý lịch cá nhân & Đổi mật khẩu
+    /// </summary>
+    [HttpPut("profile")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+    {
+        int userId = GetCurrentUserId();
+        if (userId <= 0) return Unauthorized();
+
+        try
+        {
+            var updatedProfile = await _authService.UpdateUserProfileAsync(userId, dto);
+            return Ok(updatedProfile);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Đổi mật khẩu ngoài màn hình Login qua xác thực Email + SĐT
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ForgotPasswordResetAsync(dto);
+            return Ok(new { message = "Đổi mật khẩu thành công! Bạn có thể đăng nhập ngay với mật khẩu mới." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private int GetCurrentUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                 ?? User.FindFirst("sub")?.Value 
+                 ?? User.FindFirst("nameid")?.Value;
+        return int.TryParse(claim, out int id) ? id : 0;
     }
 }

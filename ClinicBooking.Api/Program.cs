@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using ClinicBooking.Core.Interfaces;
 using ClinicBooking.Core.Validators;
@@ -10,6 +12,9 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
+// Clear inbound claim type mapping to preserve JWT claim names
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +40,8 @@ builder.Services.AddScoped<ISpecializationService, SpecializationService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IReceptionService, ReceptionService>();
 builder.Services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
+builder.Services.AddScoped<IStaffManagementService, StaffManagementService>();
+builder.Services.AddScoped<IScheduleBatchService, ScheduleBatchService>();
 
 // 3. Add FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
@@ -57,7 +64,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "ClinicBookingApi",
         ValidAudience = builder.Configuration["JwtSettings:Audience"] ?? "ClinicBookingClient",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.NameIdentifier
     };
 });
 
@@ -115,7 +124,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// NOTE: Disabled UseHttpsRedirection to prevent 307 redirects from stripping Authorization header on HTTP AJAX requests
+// app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

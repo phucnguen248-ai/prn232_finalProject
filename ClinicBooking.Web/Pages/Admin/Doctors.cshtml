@@ -4,14 +4,16 @@
     ViewData["Title"] = "Quản Lý Bác Sĩ";
 }
 
+<div id="admin-subnav"></div>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-person-badge text-primary me-2"></i>Quản Lý Hồ Sơ Bác Sĩ</h2>
-        <p class="text-muted mb-0">Quản lý danh sách bác sĩ, số giấy phép và chuyên khoa đảm nhận</p>
+        <h2 class="fw-bold text-dark mb-1">Quản Lý Hồ Sơ Bác Sĩ</h2>
+        <p class="text-muted mb-0">Quản lý danh sách bác sĩ, số giấy phép và chuyên khoa đảm nhận (Cập nhật thông tin bác sĩ hiện tại)</p>
     </div>
-    <button class="btn btn-primary-gradient" onclick="openCreateDoctorModal()">
-        <i class="bi bi-person-plus me-1"></i>Thêm Bác Sĩ Mới
-    </button>
+    <a href="/Admin/CreateAccount" class="btn btn-primary-gradient px-4">
+        Tạo Tài Khoản Bác Sĩ Mới
+    </a>
 </div>
 
 <div class="card card-premium p-4">
@@ -36,12 +38,12 @@
     </div>
 </div>
 
-<!-- Modal Create Doctor -->
+<!-- Modal Edit Doctor -->
 <div class="modal fade" id="modalDoctor" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-bottom-0">
-                <h5 class="modal-title fw-bold" id="modalDoctorTitle">Thêm Bác Sĩ Mới</h5>
+                <h5 class="modal-title fw-bold" id="modalDoctorTitle"><i class="bi bi-pencil-square text-primary me-2"></i>Cập Nhật Hồ Sơ Bác Sĩ</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -51,14 +53,6 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Họ và Tên Bác Sĩ <span class="text-danger">*</span></label>
                             <input type="text" id="doc-fullname" class="form-control" required placeholder="BS. Nguyễn Văn A" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email Đăng Nhập <span class="text-danger">*</span></label>
-                            <input type="email" id="doc-email" class="form-control" required placeholder="doctor@clinic.com" />
-                        </div>
-                        <div class="col-md-6" id="div-password">
-                            <label class="form-label fw-semibold">Mật Khẩu Khởi Tạo <span class="text-danger">*</span></label>
-                            <input type="password" id="doc-password" class="form-control" placeholder="••••••••" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Số Điện Thoại <span class="text-danger">*</span></label>
@@ -85,7 +79,7 @@
                     </div>
                     <div class="text-end mt-4">
                         <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-primary-gradient">Lưu Bác Sĩ</button>
+                        <button type="submit" class="btn btn-primary-gradient">Lưu Thay Đổi</button>
                     </div>
                 </form>
             </div>
@@ -99,6 +93,9 @@
     let specList = [];
 
     $(document).ready(function () {
+        if (!requireRole(['Admin'])) return;
+        renderAdminSubNav("admin-subnav");
+
         loadSpecializationDropdown();
         loadDoctors();
     });
@@ -143,7 +140,7 @@
                                 : '<span class="badge bg-secondary">Tạm Khóa</span>'}
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary me-1 rounded-circle" onclick="openEditDoctorModal(${item.doctorId}, '${escapeQuotes(item.fullName)}', '${escapeQuotes(item.phoneNumber)}', ${item.specializationId}, '${escapeQuotes(item.licenseNumber)}', ${item.yearsOfExperience}, '${escapeQuotes(item.bio)}', ${item.isActive})">
+                            <button class="btn btn-sm btn-outline-primary rounded-circle" title="Chỉnh sửa hồ sơ" onclick="openEditDoctorModal(${item.doctorId}, '${escapeQuotes(item.fullName)}', '${escapeQuotes(item.phoneNumber)}', ${item.specializationId}, '${escapeQuotes(item.licenseNumber)}', ${item.yearsOfExperience}, '${escapeQuotes(item.bio)}', ${item.isActive})">
                                 <i class="bi bi-pencil"></i>
                             </button>
                         </td>
@@ -167,90 +164,46 @@
         return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
 
-    function openCreateDoctorModal() {
-        $("#doc-id").val("0");
-        $("#doc-fullname").val("");
-        $("#doc-email").val("").prop("disabled", false);
-        $("#div-password").removeClass("d-none");
-        $("#doc-password").prop("required", true);
-        $("#doc-phone").val("");
-        $("#doc-spec").val("");
-        $("#doc-license").val("");
-        $("#doc-exp").val("5");
-        $("#doc-bio").val("");
-        $("#modalDoctorTitle").text("Thêm Bác Sĩ Mới");
-        new bootstrap.Modal('#modalDoctor').show();
-    }
-
     function openEditDoctorModal(id, fullname, phone, specId, license, exp, bio, isActive) {
         $("#doc-id").val(id);
         $("#doc-fullname").val(fullname);
-        $("#doc-email").prop("disabled", true);
-        $("#div-password").addClass("d-none");
-        $("#doc-password").prop("required", false);
         $("#doc-phone").val(phone);
         $("#doc-spec").val(specId);
         $("#doc-license").val(license);
         $("#doc-exp").val(exp);
         $("#doc-bio").val(bio);
-        $("#modalDoctorTitle").text("Cập Nhật Hồ Sơ Bác Sĩ");
+        $("#modalDoctorTitle").html('<i class="bi bi-pencil-square text-primary me-2"></i>Cập Nhật Hồ Sơ Bác Sĩ');
         new bootstrap.Modal('#modalDoctor').show();
     }
 
     $("#form-doctor").on("submit", function (e) {
         e.preventDefault();
         const id = parseInt($("#doc-id").val());
+        if (id === 0) return;
 
-        if (id === 0) {
-            const payload = {
-                email: $("#doc-email").val().trim(),
-                password: $("#doc-password").val(),
-                fullName: $("#doc-fullname").val().trim(),
-                phoneNumber: $("#doc-phone").val().trim(),
-                specializationId: parseInt($("#doc-spec").val()),
-                licenseNumber: $("#doc-license").val().trim(),
-                yearsOfExperience: parseInt($("#doc-exp").val()),
-                bio: $("#doc-bio").val().trim()
-            };
+        const payload = {
+            fullName: $("#doc-fullname").val().trim(),
+            phoneNumber: $("#doc-phone").val().trim(),
+            specializationId: parseInt($("#doc-spec").val()),
+            licenseNumber: $("#doc-license").val().trim(),
+            yearsOfExperience: parseInt($("#doc-exp").val()),
+            bio: $("#doc-bio").val().trim(),
+            isActive: true
+        };
 
-            $.ajax({
-                url: `${API_BASE_URL}/doctors`,
-                type: "POST",
-                headers: getAuthHeaders(),
-                data: JSON.stringify(payload),
-                success: function () {
-                    bootstrap.Modal.getInstance('#modalDoctor').hide();
-                    loadDoctors();
-                },
-                error: function (xhr) {
-                    alert(xhr.responseJSON?.message || "Có lỗi xảy ra khi tạo bác sĩ.");
-                }
-            });
-        } else {
-            const payload = {
-                fullName: $("#doc-fullname").val().trim(),
-                phoneNumber: $("#doc-phone").val().trim(),
-                specializationId: parseInt($("#doc-spec").val()),
-                licenseNumber: $("#doc-license").val().trim(),
-                yearsOfExperience: parseInt($("#doc-exp").val()),
-                bio: $("#doc-bio").val().trim(),
-                isActive: true
-            };
-
-            $.ajax({
-                url: `${API_BASE_URL}/doctors/${id}`,
-                type: "PUT",
-                headers: getAuthHeaders(),
-                data: JSON.stringify(payload),
-                success: function () {
-                    bootstrap.Modal.getInstance('#modalDoctor').hide();
-                    loadDoctors();
-                },
-                error: function (xhr) {
-                    alert(xhr.responseJSON?.message || "Có lỗi xảy ra khi cập nhật bác sĩ.");
-                }
-            });
-        }
+        $.ajax({
+            url: `${API_BASE_URL}/doctors/${id}`,
+            type: "PUT",
+            headers: getAuthHeaders(),
+            data: JSON.stringify(payload),
+            success: function () {
+                bootstrap.Modal.getInstance('#modalDoctor').hide();
+                loadDoctors();
+            },
+            error: function (xhr) {
+                alert(xhr.responseJSON?.message || "Có lỗi xảy ra khi cập nhật bác sĩ.");
+            }
+        });
     });
 </script>
 }

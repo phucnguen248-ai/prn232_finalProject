@@ -10,6 +10,8 @@ public class Schedule
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
     public string Status { get; set; } = ScheduleStatus.Available.ToString();
+    public string? CancelReason { get; set; }
+    public DateTime? CancelRequestedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

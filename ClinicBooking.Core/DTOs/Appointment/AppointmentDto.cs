@@ -18,6 +18,7 @@ public class AppointmentDto
     public string Status { get; set; } = string.Empty;
     public string Reason { get; set; } = string.Empty;
     public string? Notes { get; set; }
+    public string? AttachmentUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? CheckedInAt { get; set; }
     public DateTime? CompletedAt { get; set; }
@@ -27,4 +28,5 @@ public class AppointmentDto
 public class CompleteAppointmentDto
 {
     public string Notes { get; set; } = string.Empty;
+    public string? AttachmentUrl { get; set; }
 }

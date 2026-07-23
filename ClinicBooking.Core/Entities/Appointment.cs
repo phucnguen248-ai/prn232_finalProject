@@ -12,6 +12,7 @@ public class Appointment
     public string Status { get; set; } = AppointmentStatus.Confirmed.ToString();
     public string Reason { get; set; } = string.Empty;
     public string? Notes { get; set; }
+    public string? AttachmentUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CheckedInAt { get; set; }
     public DateTime? CompletedAt { get; set; }

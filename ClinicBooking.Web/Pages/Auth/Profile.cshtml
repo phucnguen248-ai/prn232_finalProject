@@ -1,0 +1,330 @@
+@page
+@model ClinicBooking.Web.Pages.Auth.ProfileModel
+@{
+    ViewData["Title"] = "Hồ Sơ Cá Nhân";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+        <!-- Header Section -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-1">Hồ Sơ Cá Nhân</h2>
+                <p class="text-muted mb-0">Xem và quản lý thông tin sơ yếu lý lịch tài khoản của bạn</p>
+            </div>
+            <div>
+                <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill" id="profile-role-badge">Đang tải...</span>
+            </div>
+        </div>
+
+        <div id="profile-alert-success" class="alert alert-success d-none mb-3"></div>
+        <div id="profile-alert-error" class="alert alert-danger d-none mb-3"></div>
+
+        <!-- ================= MODE 1: READONLY VIEW MODE ================= -->
+        <div id="profile-view-mode">
+            <div class="card card-premium p-4 mb-4">
+                <h5 class="fw-bold text-primary border-bottom pb-3 mb-3">1. Thông Tin Tài Khoản Chức Danh</h5>
+                <div class="row g-3 fs-6">
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Địa Chỉ Email:</strong>
+                        <span id="view-email" class="fw-semibold text-dark"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Họ và Tên:</strong>
+                        <span id="view-fullname" class="fw-bold text-dark fs-5"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Số Điện Thoại:</strong>
+                        <span id="view-phone" class="fw-semibold text-dark"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Details View -->
+            <div class="card card-premium p-4 mb-4 d-none" id="view-section-patient">
+                <h5 class="fw-bold text-primary border-bottom pb-3 mb-3">2. Thông Tin Bệnh Nhân</h5>
+                <div class="row g-3 fs-6">
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Ngày Sinh:</strong>
+                        <span id="view-dob" class="fw-semibold text-dark"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Giới Tính:</strong>
+                        <span id="view-gender" class="fw-semibold text-dark"></span>
+                    </div>
+                    <div class="col-12">
+                        <strong class="text-muted d-block">Địa Chỉ Cư Trú:</strong>
+                        <span id="view-address" class="fw-semibold text-dark"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-premium p-4 mb-4 d-none" id="view-section-doctor">
+                <h5 class="fw-bold text-primary border-bottom pb-3 mb-3">2. Thông Tin Chuyên Môn Bác Sĩ</h5>
+                <div class="row g-3 fs-6">
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Chuyên Khoa Đảm Nhận:</strong>
+                        <span id="view-spec" class="badge bg-info text-dark fs-6"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Số Giấy Phép Hành Nghề:</strong>
+                        <span id="view-license" class="fw-semibold text-dark"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Số Năm Kinh Nghiệm:</strong>
+                        <span id="view-exp" class="fw-semibold text-dark"></span>
+                    </div>
+                    <div class="col-12">
+                        <strong class="text-muted d-block">Bio Giới Thiệu Chuyên Môn:</strong>
+                        <p id="view-bio" class="p-3 bg-light rounded text-dark fs-7 mb-0"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-premium p-4 mb-4 d-none" id="view-section-staff">
+                <h5 class="fw-bold text-primary border-bottom pb-3 mb-3">2. Thông Tin Công Tác Lễ Tân</h5>
+                <div class="row g-3 fs-6">
+                    <div class="col-md-6">
+                        <strong class="text-muted d-block">Chức Vụ Đảm Nhận:</strong>
+                        <span id="view-position" class="fw-semibold text-dark"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Action Button -->
+            <div class="text-end mb-5">
+                <button type="button" class="btn btn-gold btn-lg px-5 font-semibold" onclick="switchToEditMode()">
+                    Chỉnh Sửa Hồ Sơ
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODE 2: EDIT FORM MODE ================= -->
+        <div id="profile-edit-mode" class="d-none">
+            <form id="form-profile">
+                <!-- SECTION 1: ACCOUNT INFORMATION -->
+                <div class="card card-premium p-4 mb-4">
+                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-3">1. Cập Nhật Thông Tin Tài Khoản</h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Địa Chỉ Email</label>
+                            <input type="email" id="prof-email" class="form-control bg-light" readonly />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Họ và Tên <span class="text-danger">*</span></label>
+                            <input type="text" id="prof-fullname" class="form-control" placeholder="Nhập họ và tên đầy đủ" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số Điện Thoại <span class="text-danger">*</span></label>
+                            <input type="text" id="prof-phone" class="form-control" placeholder="Nhập số điện thoại liên hệ" required />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: ROLE-SPECIFIC EDIT FIELDS -->
+                <div class="card card-premium p-4 mb-4 d-none" id="edit-section-patient">
+                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-3">2. Cập Nhật Hồ Sơ Bệnh Nhân</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ngày Sinh</label>
+                            <input type="date" id="prof-dob" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Giới Tính</label>
+                            <select id="prof-gender" class="form-select">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Địa Chỉ Cư Trú</label>
+                            <input type="text" id="prof-address" class="form-control" placeholder="Nhập địa chỉ cư trú..." />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-premium p-4 mb-4 d-none" id="edit-section-doctor">
+                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-3">2. Cập Nhật Chuyên Môn Bác Sĩ</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Chuyên Khoa Đảm Nhận</label>
+                            <input type="text" id="prof-spec-name" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số Giấy Phép Hành Nghề</label>
+                            <input type="text" id="prof-license" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số Năm Kinh Nghiệm</label>
+                            <input type="number" id="prof-exp" class="form-control" min="0" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Tóm Tắt Giới Thiệu Chuyên Môn (Bio)</label>
+                            <textarea id="prof-bio" class="form-control" rows="4" placeholder="Nhập tóm tắt quá trình công tác..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-premium p-4 mb-4 d-none" id="edit-section-staff">
+                    <h5 class="fw-bold text-dark border-bottom pb-3 mb-3">2. Cập Nhật Thông Tin Lễ Tân</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Chức Vụ Đảm Nhận</label>
+                            <input type="text" id="prof-position" class="form-control" placeholder="Ví dụ: Lễ tân trưởng ca..." />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between mb-5">
+                    <button type="button" class="btn btn-light btn-lg px-4" onclick="switchToViewMode()">
+                        Hủy Chỉnh Sửa
+                    </button>
+                    <button type="submit" class="btn btn-primary-gradient btn-lg px-5 font-semibold">
+                        Lưu Thay Đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let rawProfileData = null;
+
+    $(document).ready(function() {
+        const token = getAuthToken();
+        if (!token) {
+            window.location.href = "/Auth/Login";
+            return;
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        $("#prof-dob").attr("max", todayStr).on("change", function() {
+            if ($(this).val() && $(this).val() > todayStr) {
+                showCustomAlert("Ngày sinh không thể ở trong tương lai. Vui lòng chọn lại!", "Cảnh Báo Ngày Sinh", "warning");
+                $(this).val(todayStr);
+            }
+        });
+
+        loadProfileData();
+    });
+
+    function loadProfileData() {
+        $.ajax({
+            url: `${API_BASE_URL}/auth/profile`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                rawProfileData = data;
+                renderViewMode(data);
+                populateEditForm(data);
+            },
+            error: function(xhr) {
+                showCustomAlert("Không thể tải thông tin hồ sơ cá nhân.", "Lỗi Tải Dữ Liệu", "error");
+            }
+        });
+    }
+
+    function renderViewMode(data) {
+        $("#profile-role-badge").text(data.role);
+
+        $("#view-email").text(data.email);
+        $("#view-fullname").text(data.fullName);
+        $("#view-phone").text(data.phoneNumber);
+
+        if (data.role === "Patient") {
+            $("#view-section-patient").removeClass("d-none");
+            $("#view-dob").text(data.dateOfBirth || "Chưa cập nhật");
+            $("#view-gender").text(data.gender || "Khác");
+            $("#view-address").text(data.address || "Chưa cập nhật");
+        } else if (data.role === "Doctor") {
+            $("#view-section-doctor").removeClass("d-none");
+            $("#view-spec").text(data.specializationName || "Chưa xếp");
+            $("#view-license").text(data.licenseNumber || "N/A");
+            $("#view-exp").text(`${data.yearsOfExperience || 0} năm`);
+            $("#view-bio").text(data.bio || "Chưa có bài giới thiệu.");
+        } else if (data.role === "Staff") {
+            $("#view-section-staff").removeClass("d-none");
+            $("#view-position").text(data.position || "Nhân viên quầy lễ tân");
+        }
+    }
+
+    function populateEditForm(data) {
+        $("#prof-email").val(data.email);
+        $("#prof-fullname").val(data.fullName);
+        $("#prof-phone").val(data.phoneNumber);
+
+        if (data.role === "Patient") {
+            $("#edit-section-patient").removeClass("d-none");
+            if (data.dateOfBirth) $("#prof-dob").val(data.dateOfBirth);
+            if (data.gender) $("#prof-gender").val(data.gender);
+            $("#prof-address").val(data.address || "");
+        } else if (data.role === "Doctor") {
+            $("#edit-section-doctor").removeClass("d-none");
+            $("#prof-spec-name").val(data.specializationName || "Chưa xếp");
+            $("#prof-license").val(data.licenseNumber || "");
+            $("#prof-exp").val(data.yearsOfExperience || 0);
+            $("#prof-bio").val(data.bio || "");
+        } else if (data.role === "Staff") {
+            $("#edit-section-staff").removeClass("d-none");
+            $("#prof-position").val(data.position || "");
+        }
+    }
+
+    function switchToEditMode() {
+        $("#profile-view-mode").addClass("d-none");
+        $("#profile-edit-mode").removeClass("d-none");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchToViewMode() {
+        $("#profile-edit-mode").addClass("d-none");
+        $("#profile-view-mode").removeClass("d-none");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    $("#form-profile").on("submit", function(e) {
+        e.preventDefault();
+
+        const payload = {
+            fullName: $("#prof-fullname").val().trim(),
+            phoneNumber: $("#prof-phone").val().trim(),
+            dateOfBirth: $("#prof-dob").val() || null,
+            gender: $("#prof-gender").val() || null,
+            address: $("#prof-address").val()?.trim() || null,
+            yearsOfExperience: $("#prof-exp").val() ? parseInt($("#prof-exp").val()) : null,
+            bio: $("#prof-bio").val()?.trim() || null,
+            position: $("#prof-position").val()?.trim() || null
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/auth/profile`,
+            type: "PUT",
+            headers: getAuthHeaders(),
+            data: JSON.stringify(payload),
+            success: function(res) {
+                const user = getCurrentUser();
+                if (user) {
+                    user.fullName = res.fullName;
+                    localStorage.setItem("jwt_user", JSON.stringify(user));
+                    renderAuthNav();
+                }
+
+                showCustomAlert("Cập nhật thông tin hồ sơ cá nhân thành công!", "Thông Báo", "success");
+                loadProfileData();
+                switchToViewMode();
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON?.message || "Có lỗi xảy ra khi cập nhật hồ sơ.";
+                showCustomAlert(msg, "Lỗi Cập Nhật", "error");
+            }
+        });
+    });
+</script>
+}

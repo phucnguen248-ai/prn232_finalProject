@@ -136,7 +136,7 @@
                 $("#tbody-reception").html(rows);
             },
             error: function(xhr) {
-                alert("Không thể tải cuộc hẹn. Vui lòng đăng nhập với tài khoản Staff/Admin.");
+                showCustomAlert("Không thể tải cuộc hẹn. Vui lòng đăng nhập với tài khoản Staff/Admin.", "Lỗi", "error");
             }
         });
     }
@@ -147,28 +147,30 @@
             type: "PATCH",
             headers: getAuthHeaders(),
             success: function(res) {
+                showCustomAlert("Đã Check-in thành công cho bệnh nhân!", "Check-in Thành Công", "success");
                 searchAppointments();
             },
             error: function(xhr) {
-                alert(xhr.responseJSON?.message || "Không thể thực hiện Check-in.");
+                showCustomAlert(xhr.responseJSON?.message || "Không thể thực hiện Check-in.", "Lỗi", "error");
             }
         });
     }
 
     function markNoShow(appointmentId) {
-        if (!confirm("Xác nhận đánh dấu bệnh nhân bỏ hẹn (No-Show)?")) return;
-
-        $.ajax({
-            url: `${API_BASE_URL}/appointments/${appointmentId}/no-show`,
-            type: "PATCH",
-            headers: getAuthHeaders(),
-            success: function(res) {
-                searchAppointments();
-            },
-            error: function(xhr) {
-                alert(xhr.responseJSON?.message || "Không thể đánh dấu No-Show.");
-            }
-        });
+        showCustomConfirm("Bạn có chắc chắn muốn đánh dấu bệnh nhân bỏ hẹn (No-Show)?", function() {
+            $.ajax({
+                url: `${API_BASE_URL}/appointments/${appointmentId}/no-show`,
+                type: "PATCH",
+                headers: getAuthHeaders(),
+                success: function(res) {
+                    showCustomAlert("Đã ghi nhận vắng mặt (No-Show).", "Thông Báo", "info");
+                    searchAppointments();
+                },
+                error: function(xhr) {
+                    showCustomAlert(xhr.responseJSON?.message || "Không thể đánh dấu No-Show.", "Lỗi", "error");
+                }
+            });
+        }, "Xác Nhận Vắng Mặt");
     }
 </script>
 }

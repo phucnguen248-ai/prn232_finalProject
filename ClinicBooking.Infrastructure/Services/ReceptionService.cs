@@ -115,6 +115,7 @@ public class ReceptionService : IReceptionService
             Status = a.Status,
             Reason = a.Reason,
             Notes = a.Notes,
+            AttachmentUrl = a.AttachmentUrl,
             CreatedAt = a.CreatedAt,
             CheckedInAt = a.CheckedInAt,
             CompletedAt = a.CompletedAt,
