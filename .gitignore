@@ -1,0 +1,14 @@
+## Ignore Visual Studio & .NET build artifacts
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+appsettings.Development.json
+*.log
+
+## Ignore OS generated files
+.DS_Store
+Thumbs.db
