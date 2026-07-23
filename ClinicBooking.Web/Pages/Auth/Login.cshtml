@@ -87,7 +87,9 @@
             },
             error: function(xhr) {
                 let errMsg = "Đăng nhập thất bại. Vui lòng thử lại.";
-                if (xhr.responseJSON && xhr.responseJSON.message) {
+                if (xhr.status === 0) {
+                    errMsg = "Không thể kết nối tới Backend API (http://localhost:5036). Hãy đảm bảo project ClinicBooking.Api đang chạy!";
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
                     errMsg = xhr.responseJSON.message;
                 }
                 $("#login-alert").removeClass("d-none").text(errMsg);
