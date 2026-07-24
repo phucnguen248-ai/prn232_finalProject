@@ -23,8 +23,26 @@ namespace ClinicBooking.Infrastructure.Services
 
         public async Task<IEnumerable<ScheduleSlotDto>> GetAvailableSlotsAsync(int doctorId, DateOnly date)
         {
-            var slots = await _dbContext.Schedules
-                .Where(s => s.DoctorId == doctorId && s.SlotDate == date && s.Status == ScheduleStatus.Available.ToString())
+            var localNow = DateTime.Now;
+            var today = DateOnly.FromDateTime(localNow);
+
+            if (date < today)
+            {
+                return Enumerable.Empty<ScheduleSlotDto>();
+            }
+
+            var query = _dbContext.Schedules
+                .Where(s => s.DoctorId == doctorId
+                    && s.SlotDate == date
+                    && s.Status == ScheduleStatus.Available.ToString());
+
+            if (date == today)
+            {
+                var currentTime = TimeOnly.FromDateTime(localNow);
+                query = query.Where(s => s.StartTime > currentTime);
+            }
+
+            var slots = await query
                 .OrderBy(s => s.StartTime)
                 .Select(s => new ScheduleSlotDto
                 {
@@ -83,6 +101,17 @@ namespace ClinicBooking.Infrastructure.Services
                     {
                         Success = false,
                         Message = "The selected slot does not belong to the selected doctor. Please reload the available slots."
+                    };
+                }
+
+                var slotStartDateTime = schedule.SlotDate.ToDateTime(schedule.StartTime);
+                if (slotStartDateTime <= DateTime.Now)
+                {
+                    await transaction.RollbackAsync();
+                    return new BookingResult
+                    {
+                        Success = false,
+                        Message = "Khung giờ khám này đã bắt đầu hoặc đã qua. Vui lòng chọn khung giờ khác."
                     };
                 }
 
@@ -182,14 +211,15 @@ namespace ClinicBooking.Infrastructure.Services
             }
 
             // KIỂM TRA QUY TẮC HỦY LỊCH MỀM DẺO (GRACE PERIOD RULE)
-            var now = DateTime.UtcNow;
+            var utcNow = DateTime.UtcNow;
+            var localNow = DateTime.Now;
             
             // Điều kiện 2: Hủy trong vòng 15 phút sau khi đặt thành công (Grace Period)
-            var isGracePeriod = (now - appointment.CreatedAt).TotalMinutes <= 15;
+            var isGracePeriod = (utcNow - appointment.CreatedAt).TotalMinutes <= 15;
 
             // Điều kiện 1: Hủy trước giờ khám >= 2 tiếng
             var slotStartDateTime = appointment.Schedule.SlotDate.ToDateTime(appointment.Schedule.StartTime);
-            var isTwoHoursBefore = (slotStartDateTime - now).TotalHours >= 2;
+            var isTwoHoursBefore = (slotStartDateTime - localNow).TotalHours >= 2;
 
             if (!isGracePeriod && !isTwoHoursBefore)
             {
@@ -203,7 +233,7 @@ namespace ClinicBooking.Infrastructure.Services
 
             // Thực hiện Hủy lịch & Mở lại Slot ca khám
             appointment.Status = AppointmentStatus.Cancelled.ToString();
-            appointment.CancelledAt = now;
+            appointment.CancelledAt = utcNow;
 
             if (appointment.Schedule != null)
             {
@@ -227,7 +257,8 @@ namespace ClinicBooking.Infrastructure.Services
                 return new List<AppointmentHistoryDto>();
             }
 
-            var now = DateTime.UtcNow;
+            var utcNow = DateTime.UtcNow;
+            var localNow = DateTime.Now;
 
             var appointments = await _dbContext.Appointments
                 .Include(a => a.Doctor).ThenInclude(d => d.User)
@@ -239,9 +270,9 @@ namespace ClinicBooking.Infrastructure.Services
 
             var result = appointments.Select(a =>
             {
-                var isGracePeriod = (now - a.CreatedAt).TotalMinutes <= 15;
+                var isGracePeriod = (utcNow - a.CreatedAt).TotalMinutes <= 15;
                 var slotStartDateTime = a.Schedule.SlotDate.ToDateTime(a.Schedule.StartTime);
-                var isTwoHoursBefore = (slotStartDateTime - now).TotalHours >= 2;
+                var isTwoHoursBefore = (slotStartDateTime - localNow).TotalHours >= 2;
                 var canCancel = a.Status == AppointmentStatus.Confirmed.ToString() && (isGracePeriod || isTwoHoursBefore);
 
                 return new AppointmentHistoryDto
