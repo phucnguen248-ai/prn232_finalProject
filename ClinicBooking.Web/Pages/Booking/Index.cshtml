@@ -5,22 +5,29 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-md-9">
-        <div class="card card-premium p-4">
+    <div class="col-xl-10">
+        <div class="card card-premium booking-card p-4">
             <div class="d-flex align-items-center mb-4">
                 <div class="patient-page-icon me-3">
                     <i class="bi bi-calendar2-check fs-2"></i>
                 </div>
                 <div>
-                    <h3 class="fw-bold text-dark mb-1">Đăng Ký Đặt Lịch Khám Bệnh</h3>
-                    <p class="text-muted mb-0">Chọn Bác sĩ, ngày khám và khung giờ phù hợp với bạn.</p>
+                    <span class="eyebrow-text">Đặt lịch trực tuyến</span>
+                    <h1 class="h3 fw-bold text-dark mb-1">Đăng ký lịch khám</h1>
+                    <p class="text-muted mb-0">Chọn bác sĩ, ngày khám và khung giờ phù hợp với bạn.</p>
                 </div>
             </div>
 
+            <ol class="booking-steps" aria-label="Các bước đặt lịch">
+                <li class="active"><span>1</span><div><strong>Chọn lịch</strong><small>Bác sĩ &amp; giờ khám</small></div></li>
+                <li><span>2</span><div><strong>Thông tin</strong><small>Lý do khám</small></div></li>
+                <li><span>3</span><div><strong>Xác nhận</strong><small>Kiểm tra &amp; hoàn tất</small></div></li>
+            </ol>
+
             <!-- BƯỚC 1: CHỌN BÁC SĨ VÀ NGÀY -->
-            <div class="row g-3 mb-4">
+            <div class="form-section row g-3 mb-4">
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Chọn Bác sĩ <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold" for="selectDoctor">Chọn bác sĩ <span class="text-danger">*</span></label>
                     <select id="selectDoctor" class="form-select">
                         <option value="1">BS. Nguyễn Văn A (Nhi khoa)</option>
                         <option value="2">BS. Trần Thị B (Nội khoa)</option>
@@ -28,7 +35,7 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Chọn Ngày khám <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold" for="bookingDate">Chọn ngày khám <span class="text-danger">*</span></label>
                     <input type="date" id="bookingDate" class="form-control" />
                 </div>
             </div>

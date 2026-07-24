@@ -4,28 +4,38 @@
     ViewData["Title"] = "Đăng Nhập";
 }
 
-<div class="row justify-content-center py-5">
-    <div class="col-md-5">
-        <div class="card card-premium p-4">
+<div class="auth-page row justify-content-center py-4 py-lg-5">
+    <div class="col-sm-11 col-md-8 col-lg-5">
+        <div class="card card-premium auth-card p-4">
             <div class="text-center mb-4">
-                <h3 class="fw-bold text-dark mb-1">Đăng Nhập Hệ Thống</h3>
-                <p class="text-muted fs-7">Vui lòng nhập email và mật khẩu để tiếp tục</p>
+                <div class="auth-icon mx-auto mb-3" aria-hidden="true">
+                    <i class="bi bi-person-heart"></i>
+                </div>
+                <span class="eyebrow-text">Chào mừng trở lại</span>
+                <h1 class="h3 fw-bold text-dark mb-2">Đăng nhập ClinicBooking</h1>
+                <p class="text-muted fs-7 mb-0">Truy cập lịch hẹn và không gian làm việc của bạn.</p>
             </div>
 
             <div id="login-alert" class="alert alert-danger d-none mb-3"></div>
 
             <form id="form-login">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Địa chỉ Email</label>
-                    <input type="email" id="login-email" class="form-control" placeholder="admin@clinic.com" required />
+                    <label class="form-label fw-semibold" for="login-email">Địa chỉ email</label>
+                    <div class="input-icon-wrap">
+                        <i class="bi bi-envelope" aria-hidden="true"></i>
+                        <input type="email" id="login-email" class="form-control" placeholder="ban@clinic.com" autocomplete="email" required />
+                    </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Mật khẩu</label>
-                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" required />
+                    <label class="form-label fw-semibold" for="login-password">Mật khẩu</label>
+                    <div class="input-icon-wrap">
+                        <i class="bi bi-lock" aria-hidden="true"></i>
+                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password" required />
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary-gradient w-100 py-2 mb-3 fs-6 font-semibold">
-                    Đăng Nhập Ngay
+                    Đăng nhập
                 </button>
 
                 <div class="text-center mb-3">
@@ -37,22 +47,10 @@
                 <div class="text-center pt-3 border-top">
                     <p class="text-muted fs-7 mb-2">Bạn là bệnh nhân mới chưa có tài khoản?</p>
                     <button type="button" class="btn btn-outline-success w-100 font-semibold py-2" onclick="openRegisterModal()">
-                        Đăng Ký Tài Khoản Bệnh Nhân Mới
+                        <i class="bi bi-person-plus me-1" aria-hidden="true"></i>Tạo tài khoản bệnh nhân
                     </button>
                 </div>
             </form>
-
-            <hr class="my-4" />
-
-            <div class="text-center">
-                <p class="text-muted small mb-2">Đăng nhập nhanh cho demo (Quick Fill):</p>
-                <div class="d-flex flex-wrap justify-content-center gap-2">
-                    <button class="btn btn-outline-danger btn-sm" onclick="quickFill('admin@clinic.com', 'Admin123!')">Admin</button>
-                    <button class="btn btn-outline-warning text-dark btn-sm" onclick="quickFill('staff@clinic.com', 'Staff123!')">Staff</button>
-                    <button class="btn btn-outline-info text-dark btn-sm" onclick="quickFill('doctor1@clinic.com', 'Doctor123!')">Doctor</button>
-                    <button class="btn btn-outline-success btn-sm" onclick="quickFill('patient1@clinic.com', 'Patient123!')">Patient</button>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -174,11 +172,6 @@
             }
         });
     });
-
-    function quickFill(email, password) {
-        $("#login-email").val(email);
-        $("#login-password").val(password);
-    }
 
     function openForgotPasswordModal(e) {
         e.preventDefault();

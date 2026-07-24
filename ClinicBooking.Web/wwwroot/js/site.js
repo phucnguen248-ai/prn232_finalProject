@@ -177,20 +177,27 @@ function renderAdminSubNav(containerId) {
     const currentPath = window.location.pathname.toLowerCase();
 
     const navItems = [
-        { name: "Dashboard", url: "/admin/dashboard" },
-        { name: "Ca Trực Bác Sĩ", url: "/admin/schedules" },
-        { name: "Tạo Tài Khoản", url: "/admin/createaccount" },
-        { name: "Chuyên Khoa", url: "/admin/specializations" },
-        { name: "Bác Sĩ", url: "/admin/doctors" },
-        { name: "Quầy Lễ Tân", url: "/staff/reception" }
+        { name: "Tổng quan", icon: "bi-grid-1x2", url: "/admin/dashboard" },
+        { name: "Ca trực", icon: "bi-calendar3", url: "/admin/schedules" },
+        { name: "Tạo tài khoản", icon: "bi-person-plus", url: "/admin/createaccount" },
+        { name: "Chuyên khoa", icon: "bi-bookmark-heart", url: "/admin/specializations" },
+        { name: "Bác sĩ", icon: "bi-person-badge", url: "/admin/doctors" },
+        { name: "Lễ tân", icon: "bi-reception-4", url: "/staff/reception" }
     ];
 
-    let html = '<div class="admin-subnav-container"><ul class="admin-nav">';
+    let html = '<nav class="admin-subnav-container" aria-label="Điều hướng quản trị"><ul class="admin-nav">';
     navItems.forEach(item => {
         const isActive = currentPath === item.url.toLowerCase() ? "active" : "";
-        html += `<li class="admin-nav-item"><a class="admin-nav-link ${isActive}" href="${item.url}">${item.name}</a></li>`;
+        const ariaCurrent = isActive ? ' aria-current="page"' : "";
+        html += `
+            <li class="admin-nav-item">
+                <a class="admin-nav-link ${isActive}" href="${item.url}"${ariaCurrent}>
+                    <i class="bi ${item.icon}" aria-hidden="true"></i>
+                    <span>${item.name}</span>
+                </a>
+            </li>`;
     });
-    html += '</ul></div>';
+    html += '</ul></nav>';
 
     container.innerHTML = html;
 }
@@ -202,62 +209,87 @@ function renderAuthNav() {
 
     if (!authNavContainer || !roleNavContainer) return;
 
+    const currentPath = window.location.pathname.toLowerCase();
+    const roleLabels = {
+        Admin: "Quản trị viên",
+        Staff: "Nhân viên lễ tân",
+        Doctor: "Bác sĩ",
+        Patient: "Bệnh nhân"
+    };
+    const renderRoleLinks = (items) => items.map(item => {
+        const isActive = currentPath === item.url.toLowerCase();
+        return `
+            <li class="nav-item">
+                <a class="nav-link${isActive ? " active" : ""}" href="${item.url}"${isActive ? ' aria-current="page"' : ""}>
+                    <i class="bi ${item.icon}" aria-hidden="true"></i>${item.name}
+                </a>
+            </li>`;
+    }).join("");
+
     if (user) {
-        let roleBadgeColor = "bg-secondary";
-        if (user.role === "Admin") roleBadgeColor = "bg-danger";
-        if (user.role === "Staff") roleBadgeColor = "bg-warning text-dark";
-        if (user.role === "Doctor") roleBadgeColor = "bg-info text-dark";
-        if (user.role === "Patient") roleBadgeColor = "bg-success";
+        const fullName = escapeHtml(user.fullName || "Người dùng");
+        const initial = escapeHtml((user.fullName || "U").trim().charAt(0).toUpperCase());
+        const roleLabel = roleLabels[user.role] || escapeHtml(user.role);
 
         authNavContainer.innerHTML = `
-            <li class="nav-item me-2 d-flex align-items-center">
-                <span class="badge ${roleBadgeColor} me-2">${user.role}</span>
-                <a href="/Auth/Profile" class="fw-semibold text-dark text-decoration-none me-3" title="Xem hồ sơ cá nhân">
-                    ${escapeHtml(user.fullName)}
-                </a>
-            </li>
-            <li class="nav-item me-2">
-                <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="/Auth/Profile">
-                    Hồ Sơ
-                </a>
-            </li>
-            <li class="nav-item">
-                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="clearAuthSession()">
-                    Đăng xuất
+            <li class="nav-item dropdown">
+                <button class="user-menu dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="user-avatar" aria-hidden="true">${initial}</span>
+                    <span class="user-copy">
+                        <strong>${fullName}</strong>
+                        <small>${roleLabel}</small>
+                    </span>
                 </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="/Auth/Profile">
+                            <i class="bi bi-person-circle me-2" aria-hidden="true"></i>Hồ sơ cá nhân
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <button class="dropdown-item text-danger" type="button" onclick="clearAuthSession()">
+                            <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Đăng xuất
+                        </button>
+                    </li>
+                </ul>
             </li>
         `;
 
-        let roleLinks = "";
+        let navItems = [];
         if (user.role === "Admin") {
-            roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-bold text-primary" href="/Admin/Dashboard">Admin Portal</a></li>
-            `;
+            navItems = [
+                { name: "Tổng quan", icon: "bi-grid-1x2", url: "/Admin/Dashboard" }
+            ];
         } else if (user.role === "Staff") {
-            roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Staff/Reception">Quầy Lễ Tân</a></li>
-            `;
+            navItems = [
+                { name: "Quầy lễ tân", icon: "bi-reception-4", url: "/Staff/Reception" }
+            ];
         } else if (user.role === "Doctor") {
-            roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Doctor/Workspace">Workspace Bác Sĩ</a></li>
-            `;
+            navItems = [
+                { name: "Không gian làm việc", icon: "bi-clipboard2-pulse", url: "/Doctor/Workspace" }
+            ];
         } else if (user.role === "Patient") {
-            roleLinks = `
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Booking/Index">Đặt Lịch Khám</a></li>
-                <li class="nav-item"><a class="nav-link fw-semibold" href="/Patient/History">Lịch Sử Cuộc Hẹn</a></li>
-            `;
+            navItems = [
+                { name: "Đặt lịch khám", icon: "bi-calendar2-plus", url: "/Booking/Index" },
+                { name: "Lịch hẹn của tôi", icon: "bi-clock-history", url: "/Patient/History" }
+            ];
         }
-        roleNavContainer.innerHTML = roleLinks;
+        roleNavContainer.innerHTML = renderRoleLinks(navItems);
 
     } else {
-        authNavContainer.innerHTML = `
-            <li class="nav-item">
-                <a class="btn btn-primary-gradient px-4 rounded-pill fw-semibold" href="/Auth/Login">
-                    Đăng Nhập
-                </a>
-            </li>
-        `;
-        roleNavContainer.innerHTML = "";
+        authNavContainer.innerHTML = currentPath === "/auth/login"
+            ? ""
+            : `
+                <li class="nav-item">
+                    <a class="btn btn-primary-gradient px-4" href="/Auth/Login">
+                        <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>Đăng nhập
+                    </a>
+                </li>
+            `;
+        roleNavContainer.innerHTML = renderRoleLinks([
+            { name: "Đặt lịch khám", icon: "bi-calendar2-plus", url: "/Booking/Index" }
+        ]);
     }
 }
 
