@@ -14,9 +14,15 @@ function setAuthSession(token, user) {
     localStorage.setItem("jwt_user", JSON.stringify(user));
 }
 
-function clearAuthSession() {
+function clearAuthSession(returnUrl) {
     localStorage.removeItem("jwt_token");
     localStorage.removeItem("jwt_user");
+
+    if (returnUrl) {
+        redirectToLogin(returnUrl);
+        return;
+    }
+
     window.location.href = "/Auth/Login";
 }
 
@@ -31,12 +37,12 @@ function getAuthHeaders() {
     return headers;
 }
 
-function handleAuthError(xhr) {
+function handleAuthError(xhr, returnUrl) {
     if (xhr.status !== 401 && xhr.status !== 403) {
         return false;
     }
 
-    clearAuthSession();
+    clearAuthSession(returnUrl);
     return true;
 }
 
@@ -128,12 +134,23 @@ function showCustomConfirm(message, onConfirm, title = "Xác Nhận Thao Tác") 
  * Client-Side Navigation Guard (Role Guard)
  * @param {Array<string>} allowedRoles Danh sách các vai trò được phép truy cập
  */
+function getLocalReturnUrl(url = window.location.href) {
+    const targetUrl = new URL(url, window.location.origin);
+    if (targetUrl.origin !== window.location.origin) return "/";
+
+    return `${targetUrl.pathname}${targetUrl.search}` || "/";
+}
+
+function redirectToLogin(returnUrl) {
+    window.location.href = `/Auth/Login?returnUrl=${encodeURIComponent(returnUrl)}`;
+}
+
 function requireRole(allowedRoles) {
     const token = getAuthToken();
     const user = getCurrentUser();
 
     if (!token || !user) {
-        window.location.href = "/Auth/Login";
+        redirectToLogin(getLocalReturnUrl());
         return false;
     }
 

@@ -52,7 +52,9 @@
                 <h5 class="fw-bold mb-1 text-dark">
                     <i class="bi bi-person-vcard me-2 text-brand"></i>Thông Tin Bệnh Nhân & Lý Do Khám
                 </h5>
-                <p class="text-muted small mb-3">Thông tin cá nhân được lấy từ tài khoản đang đăng nhập.</p>
+                <p id="bookingAuthNotice" class="alert alert-info py-2 px-3 small mb-3">
+                    Bạn có thể xem lịch trống trước. Khi đặt lịch, hệ thống sẽ yêu cầu đăng nhập tài khoản bệnh nhân.
+                </p>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
@@ -75,7 +77,7 @@
                         <i class="bi bi-arrow-left me-1"></i> Quay lại
                     </a>
                     <button type="submit" id="btnSubmitBooking" class="btn btn-primary-gradient btn-lg px-5 fw-bold" disabled>
-                        <i class="bi bi-send me-2"></i> Xác Nhận Đặt Lịch
+                        <i class="bi bi-eye me-2"></i> Xem Trước Thông Tin
                     </button>
                 </div>
             </form>
@@ -83,14 +85,69 @@
     </div>
 </div>
 
+<div class="modal fade" id="bookingPreviewModal" tabindex="-1" aria-labelledby="bookingPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="bookingPreviewModalLabel">
+                    <i class="bi bi-clipboard2-check me-2"></i>Xem Trước Thông Tin Đặt Lịch
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-4">Vui lòng kiểm tra lại thông tin trước khi xác nhận đặt lịch.</p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="small text-muted">Bác sĩ</div>
+                        <div id="previewDoctor" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small text-muted">Ngày khám</div>
+                        <div id="previewDate" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small text-muted">Khung giờ</div>
+                        <div id="previewTime" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="small text-muted">Bệnh nhân</div>
+                        <div id="previewPatientName" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="small text-muted">Số điện thoại</div>
+                        <div id="previewPatientPhone" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-12">
+                        <div class="small text-muted">Lý do khám</div>
+                        <div id="previewReason" class="fw-semibold text-break"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-pencil me-1"></i> Chỉnh Sửa
+                </button>
+                <button type="button" id="btnConfirmBooking" class="btn btn-primary-gradient fw-bold">
+                    <i class="bi bi-check-circle me-1"></i> Xác Nhận Đặt Lịch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         $(document).ready(function() {
-            if (!requireRole(['Patient'])) return;
-
             const currentUser = getCurrentUser();
-            $('#patientName').val(currentUser.fullName);
-            $('#patientPhone').val(currentUser.phoneNumber);
+            const isAuthenticated = !!getAuthToken() && !!currentUser;
+            const isPatient = isAuthenticated && currentUser.role === 'Patient';
+            const queryParams = new URLSearchParams(window.location.search);
+            const bookingPreviewModal = bootstrap.Modal.getOrCreateInstance(
+                document.getElementById('bookingPreviewModal')
+            );
+            let pendingBookingDto = null;
+
+            initializeBookingMode();
 
             const now = new Date();
             const today = [
@@ -98,7 +155,11 @@
                 String(now.getMonth() + 1).padStart(2, '0'),
                 String(now.getDate()).padStart(2, '0')
             ].join('-');
-            $('#bookingDate').val(today);
+            const requestedDate = queryParams.get('date');
+            const initialDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && requestedDate >= today
+                ? requestedDate
+                : today;
+            $('#bookingDate').val(initialDate);
             $('#bookingDate').attr('min', today);
 
             const initialDoctorId = @Model.SelectedDoctorId;
@@ -113,11 +174,13 @@
                 $('.slot-item-btn').removeClass('is-selected');
                 $(this).addClass('is-selected');
                 $('#selectedScheduleId').val($(this).data('schedule-id'));
-                $('#btnSubmitBooking').prop('disabled', false);
+                setBookingActionEnabled(true);
             });
 
             $('#formBooking').submit(function(e) {
                 e.preventDefault();
+
+                if (!ensurePatientCanBook()) return;
 
                 const doctorId = parseInt($('#selectDoctor').val());
                 const scheduleId = parseInt($('#selectedScheduleId').val());
@@ -144,26 +207,51 @@
                     reason: reason
                 };
 
-                $('#btnSubmitBooking').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Đang xử lý đặt lịch...');
+                pendingBookingDto = bookingDto;
+
+                const selectedDate = new Date(`${$('#bookingDate').val()}T00:00:00`);
+                $('#previewDoctor').text($('#selectDoctor option:selected').text());
+                $('#previewDate').text(selectedDate.toLocaleDateString('vi-VN'));
+                $('#previewTime').text($('.slot-item-btn.is-selected').text().trim());
+                $('#previewPatientName').text(patientName);
+                $('#previewPatientPhone').text(patientPhone);
+                $('#previewReason').text(reason);
+
+                bookingPreviewModal.show();
+            });
+
+            $('#btnConfirmBooking').click(function() {
+                if (!pendingBookingDto) return;
+
+                const $confirmButton = $(this);
+                $confirmButton
+                    .prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Đang đặt lịch...');
 
                 $.ajax({
                     url: `${API_BASE_URL}/appointments`,
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(bookingDto),
+                    data: JSON.stringify(pendingBookingDto),
                     headers: getAuthHeaders(),
                     success: function(res) {
+                        pendingBookingDto = null;
+                        bookingPreviewModal.hide();
                         toastr.success(res.message || 'Đặt lịch khám bệnh thành công!');
                         setTimeout(function() {
                             window.location.href = '/Patient/History';
                         }, 1500);
                     },
                     error: function(xhr) {
-                        $('#btnSubmitBooking').prop('disabled', false).html('<i class="bi bi-send me-2"></i> Xác Nhận Đặt Lịch');
+                        $confirmButton
+                            .prop('disabled', false)
+                            .html('<i class="bi bi-check-circle me-1"></i> Xác Nhận Đặt Lịch');
 
-                        if (handleAuthError(xhr)) return;
+                        if (handleAuthError(xhr, buildBookingReturnUrl())) return;
 
                         if (xhr.status === 409) {
+                            pendingBookingDto = null;
+                            bookingPreviewModal.hide();
                             toastr.error(xhr.responseJSON?.message || 'Khung giờ này vừa có người đặt. Vui lòng chọn slot khác!');
                             loadSlots();
                         } else if (xhr.status === 400) {
@@ -179,6 +267,79 @@
                     }
                 });
             });
+
+            function initializeBookingMode() {
+                setBookingActionEnabled(false);
+
+                if (isPatient) {
+                    $('#bookingAuthNotice')
+                        .removeClass('alert-info alert-warning')
+                        .addClass('alert-success')
+                        .text('Thông tin cá nhân được lấy từ tài khoản đang đăng nhập.');
+                    $('#patientName').val(currentUser.fullName || '');
+                    $('#patientPhone').val(currentUser.phoneNumber || '');
+                    $('#reason').prop('disabled', false);
+                    return;
+                }
+
+                $('#patientName, #patientPhone, #reason').val('').prop('disabled', true);
+
+                if (isAuthenticated) {
+                    $('#bookingAuthNotice')
+                        .removeClass('alert-info alert-success')
+                        .addClass('alert-warning')
+                        .text('Bạn đang xem lịch trống. Chỉ tài khoản Bệnh nhân mới có thể đặt lịch khám.');
+                    return;
+                }
+
+                $('#bookingAuthNotice')
+                    .removeClass('alert-success alert-warning')
+                    .addClass('alert-info')
+                    .text('Bạn có thể xem lịch trống trước. Đăng nhập tài khoản bệnh nhân khi muốn đặt lịch.');
+            }
+
+            function setBookingActionEnabled(enabled) {
+                const $button = $('#btnSubmitBooking');
+                $button.prop('disabled', !enabled);
+
+                if (isPatient) {
+                    $button.html('<i class="bi bi-eye me-2"></i> Xem Trước Thông Tin');
+                } else if (isAuthenticated) {
+                    $button.html('<i class="bi bi-lock me-2"></i> Chỉ Bệnh Nhân Được Đặt Lịch');
+                } else {
+                    $button.html('<i class="bi bi-box-arrow-in-right me-2"></i> Đăng Nhập Để Đặt Lịch');
+                }
+            }
+
+            function ensurePatientCanBook() {
+                if (!isAuthenticated) {
+                    redirectToLogin(buildBookingReturnUrl());
+                    return false;
+                }
+
+                if (!isPatient) {
+                    showCustomAlert(
+                        'Chỉ tài khoản Bệnh nhân mới có thể đặt lịch khám.',
+                        'Không Thể Đặt Lịch',
+                        'warning'
+                    );
+                    return false;
+                }
+
+                return true;
+            }
+
+            function buildBookingReturnUrl() {
+                const params = new URLSearchParams();
+                const doctorId = $('#selectDoctor').val();
+                const date = $('#bookingDate').val();
+
+                if (doctorId) params.set('doctorId', doctorId);
+                if (date) params.set('date', date);
+
+                const queryString = params.toString();
+                return queryString ? `/Booking/Index?${queryString}` : '/Booking/Index';
+            }
         });
 
         function loadDoctors(selectedDoctorId) {
