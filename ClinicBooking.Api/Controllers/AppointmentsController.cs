@@ -4,12 +4,14 @@ using System.Threading.Tasks;
 using ClinicBooking.Core.DTOs;
 using ClinicBooking.Core.Interfaces;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicBooking.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Patient")]
     public class AppointmentsController : ControllerBase
     {
         private readonly IBookingService _bookingService;
@@ -23,21 +25,10 @@ namespace ClinicBooking.Api.Controllers
 
         private int GetCurrentUserId()
         {
-            // Trích xuất UserId từ JWT Claim
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("UserId")?.Value;
-            if (int.TryParse(claim, out var userId))
-            {
-                return userId;
-            }
-
-            // Fallback: đọc header X-User-Id nếu dev/test chưa qua Auth middleware
-            if (Request.Headers.TryGetValue("X-User-Id", out var headerVal) && int.TryParse(headerVal, out var headerUserId))
-            {
-                return headerUserId;
-            }
-
-            // Mặc định Patient UserId = 4 (như seed data) để dev test nhanh
-            return 4;
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value
+                     ?? User.FindFirst("nameid")?.Value;
+            return int.TryParse(claim, out var userId) ? userId : 0;
         }
 
         /// <summary>
@@ -53,6 +44,11 @@ namespace ClinicBooking.Api.Controllers
             }
 
             var currentUserId = GetCurrentUserId();
+            if (currentUserId <= 0)
+            {
+                return Unauthorized();
+            }
+
             var result = await _bookingService.BookAppointmentAsync(dto, currentUserId);
 
             if (result.IsConflict)
@@ -84,6 +80,11 @@ namespace ClinicBooking.Api.Controllers
             }
 
             var currentUserId = GetCurrentUserId();
+            if (currentUserId <= 0)
+            {
+                return Unauthorized();
+            }
+
             var result = await _bookingService.CancelAppointmentAsync(id, currentUserId);
 
             if (result.IsBadRequest)
@@ -106,6 +107,11 @@ namespace ClinicBooking.Api.Controllers
         public async Task<IActionResult> GetHistory()
         {
             var currentUserId = GetCurrentUserId();
+            if (currentUserId <= 0)
+            {
+                return Unauthorized();
+            }
+
             var history = await _bookingService.GetPatientHistoryAsync(currentUserId);
             return Ok(history);
         }

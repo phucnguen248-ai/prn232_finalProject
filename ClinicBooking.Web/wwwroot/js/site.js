@@ -31,6 +31,21 @@ function getAuthHeaders() {
     return headers;
 }
 
+function handleAuthError(xhr) {
+    if (xhr.status !== 401 && xhr.status !== 403) {
+        return false;
+    }
+
+    clearAuthSession();
+    return true;
+}
+
+function escapeHtml(value) {
+    const element = document.createElement("div");
+    element.textContent = value ?? "";
+    return element.innerHTML;
+}
+
 /**
  * Custom Friendly Alert Modal (Replaces browser alert)
  */
@@ -181,7 +196,7 @@ function renderAuthNav() {
             <li class="nav-item me-2 d-flex align-items-center">
                 <span class="badge ${roleBadgeColor} me-2">${user.role}</span>
                 <a href="/Auth/Profile" class="fw-semibold text-dark text-decoration-none me-3" title="Xem hồ sơ cá nhân">
-                    ${user.fullName}
+                    ${escapeHtml(user.fullName)}
                 </a>
             </li>
             <li class="nav-item me-2">

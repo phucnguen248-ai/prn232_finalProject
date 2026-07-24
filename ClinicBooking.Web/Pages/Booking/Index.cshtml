@@ -6,10 +6,16 @@
 
 <div class="row justify-content-center">
     <div class="col-md-9">
-        <div class="card card-custom p-4 shadow">
-            <h3 class="card-title text-primary mb-4 fw-bold text-center">
-                <i class="fa-solid fa-calendar-check me-2"></i>Đăng Ký Đặt Lịch Khám Bệnh
-            </h3>
+        <div class="card card-premium p-4">
+            <div class="d-flex align-items-center mb-4">
+                <div class="patient-page-icon me-3">
+                    <i class="bi bi-calendar2-check fs-2"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Đăng Ký Đặt Lịch Khám Bệnh</h3>
+                    <p class="text-muted mb-0">Chọn Bác sĩ, ngày khám và khung giờ phù hợp với bạn.</p>
+                </div>
+            </div>
 
             <!-- BƯỚC 1: CHỌN BÁC SĨ VÀ NGÀY -->
             <div class="row g-3 mb-4">
@@ -30,7 +36,7 @@
             <!-- BƯỚC 2: CHỌN KHUNG GIỜ KHÁM (SLOTS) -->
             <div class="mb-4">
                 <label class="form-label fw-semibold mb-2">
-                    <i class="fa-regular fa-clock me-1 text-primary"></i>Chọn Khung giờ ca khám (Slot 30 phút) <span class="text-danger">*</span>
+                    <i class="bi bi-clock me-1 text-brand"></i>Chọn Khung giờ khám <span class="text-danger">*</span>
                 </label>
                 <div id="slotsContainer" class="d-flex flex-wrap p-3 border rounded bg-light">
                     <span class="text-muted">Vui lòng chọn ngày khám để tải danh sách khung giờ rảnh.</span>
@@ -43,16 +49,19 @@
             <form id="formBooking">
                 <input type="hidden" id="selectedScheduleId" value="0" />
 
-                <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-id-card me-2"></i>Thông Tin Bệnh Nhân & Lý Do Khám</h5>
+                <h5 class="fw-bold mb-1 text-dark">
+                    <i class="bi bi-person-vcard me-2 text-brand"></i>Thông Tin Bệnh Nhân & Lý Do Khám
+                </h5>
+                <p class="text-muted small mb-3">Thông tin cá nhân được lấy từ tài khoản đang đăng nhập.</p>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Họ và tên bệnh nhân <span class="text-danger">*</span></label>
-                        <input type="text" id="patientName" class="form-control" placeholder="Nhập đầy đủ họ tên..." required />
+                        <input type="text" id="patientName" class="form-control bg-light" readonly required />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-                        <input type="tel" id="patientPhone" class="form-control" placeholder="Ví dụ: 0987654321" required />
+                        <input type="tel" id="patientPhone" class="form-control bg-light" readonly required />
                     </div>
                 </div>
 
@@ -61,12 +70,12 @@
                     <textarea id="reason" class="form-control" rows="3" placeholder="Mô tả triệu chứng hoặc nhu cầu khám (từ 10 đến 500 ký tự)..." required></textarea>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
                     <a href="/Index" class="btn btn-outline-secondary px-4 fw-semibold">
-                        <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại
                     </a>
-                    <button type="submit" id="btnSubmitBooking" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm" disabled>
-                        <i class="fa-solid fa-paper-plane me-2"></i> Xác Nhận Đặt Lịch
+                    <button type="submit" id="btnSubmitBooking" class="btn btn-primary-gradient btn-lg px-5 fw-bold" disabled>
+                        <i class="bi bi-send me-2"></i> Xác Nhận Đặt Lịch
                     </button>
                 </div>
             </form>
@@ -77,6 +86,12 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
+            if (!requireRole(['Patient'])) return;
+
+            const currentUser = getCurrentUser();
+            $('#patientName').val(currentUser.fullName);
+            $('#patientPhone').val(currentUser.phoneNumber);
+
             const today = new Date().toISOString().split('T')[0];
             $('#bookingDate').val(today);
             $('#bookingDate').attr('min', today);
@@ -90,8 +105,8 @@
             $('#selectDoctor, #bookingDate').change(loadSlots);
 
             $(document).on('click', '.slot-item-btn', function() {
-                $('.slot-item-btn').removeClass('btn-primary').addClass('btn-outline-primary');
-                $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                $('.slot-item-btn').removeClass('is-selected');
+                $(this).addClass('is-selected');
                 $('#selectedScheduleId').val($(this).data('schedule-id'));
                 $('#btnSubmitBooking').prop('disabled', false);
             });
@@ -118,16 +133,14 @@
                     reason: reason
                 };
 
-                $('#btnSubmitBooking').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang xử lý đặt lịch...');
+                $('#btnSubmitBooking').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Đang xử lý đặt lịch...');
 
                 $.ajax({
                     url: `${API_BASE_URL}/appointments`,
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(bookingDto),
-                    headers: {
-                        'X-User-Id': 4
-                    },
+                    headers: getAuthHeaders(),
                     success: function(res) {
                         toastr.success(res.message || 'Đặt lịch khám bệnh thành công!');
                         setTimeout(function() {
@@ -135,7 +148,9 @@
                         }, 1500);
                     },
                     error: function(xhr) {
-                        $('#btnSubmitBooking').prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-2"></i> Xác Nhận Đặt Lịch');
+                        $('#btnSubmitBooking').prop('disabled', false).html('<i class="bi bi-send me-2"></i> Xác Nhận Đặt Lịch');
+
+                        if (handleAuthError(xhr)) return;
 
                         if (xhr.status === 409) {
                             toastr.error(xhr.responseJSON?.message || 'Khung giờ này vừa có người đặt. Vui lòng chọn slot khác!');
@@ -209,7 +224,7 @@
 
             $('#slotsContainer').html(`
                 <div class="w-100 text-center py-3 text-muted">
-                    <i class="fa-solid fa-circle-notch fa-spin me-2"></i> Đang kiểm tra khung giờ rảnh...
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Đang kiểm tra khung giờ rảnh...
                 </div>
             `);
 
@@ -232,7 +247,7 @@
             if (!slots || slots.length === 0) {
                 $('#slotsContainer').html(`
                     <div class="w-100 text-center py-3 text-danger fw-semibold">
-                        <i class="fa-solid fa-calendar-xmark me-2"></i>Không có khung giờ rảnh nào trong ngày này. Vui lòng chọn ngày khác.
+                        <i class="bi bi-calendar-x me-2"></i>Không có khung giờ rảnh nào trong ngày này. Vui lòng chọn ngày khác.
                     </div>
                 `);
                 return;
@@ -242,8 +257,8 @@
             slots.forEach(s => {
                 const timeText = `${s.startTime.substring(0,5)} - ${s.endTime.substring(0,5)}`;
                 html += `
-                    <button type="button" class="btn btn-outline-primary slot-btn slot-item-btn shadow-sm" data-schedule-id="${s.scheduleId}">
-                        <i class="fa-regular fa-clock me-1"></i> ${timeText}
+                    <button type="button" class="btn slot-btn slot-item-btn" data-schedule-id="${s.scheduleId}">
+                        <i class="bi bi-clock me-1"></i> ${timeText}
                     </button>
                 `;
             });

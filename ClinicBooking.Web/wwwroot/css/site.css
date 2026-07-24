@@ -143,22 +143,53 @@ body {
     border-bottom: 4px solid var(--accent-gold);
 }
 
-.card-custom {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+.text-brand {
+    color: var(--primary-blue) !important;
 }
 
-.card-custom:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+.patient-page-icon,
+.doctor-avatar {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+}
+
+.patient-page-icon {
+    background: var(--light-gold);
+    color: var(--dark-gold);
+}
+
+.doctor-avatar {
+    background: var(--light-blue);
+    color: var(--primary-blue);
+}
+
+.patient-info-banner {
+    padding: 1rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: var(--light-blue);
+    color: #1e3a8a;
 }
 
 .slot-btn {
     min-width: 110px;
     margin: 4px;
+    border: 1px solid var(--primary-blue);
     border-radius: 8px;
+    color: var(--primary-blue);
     font-weight: 500;
+}
+
+.slot-btn:hover,
+.slot-btn.is-selected {
+    border-color: var(--primary-blue);
+    background: var(--primary-blue);
+    color: #ffffff;
 }
 
 .badge-status {
