@@ -21,7 +21,9 @@
         </div>
         <div class="col-md-5">
             <label class="form-label fw-semibold">Chuyên khoa</label>
-            <input type="text" id="searchSpec" class="form-control" placeholder="Nhập chuyên khoa (Nội khoa, Nhi khoa...)..." />
+            <select id="searchSpec" class="form-select" disabled>
+                <option value="">Đang tải chuyên khoa...</option>
+            </select>
         </div>
         <div class="col-md-2 d-flex align-items-end">
             <button id="btnSearch" class="btn btn-primary-gradient w-100">
@@ -40,9 +42,37 @@
 
 @section Scripts {
     <script>
+        function loadSpecializations() {
+            const $select = $('#searchSpec');
+
+            $.ajax({
+                url: `${API_BASE_URL}/specializations?$orderby=Name`,
+                type: 'GET',
+                success: function(specializations) {
+                    $select.empty().append(
+                        $('<option>', { value: '', text: 'Tất cả chuyên khoa' })
+                    );
+
+                    (specializations || []).forEach(function(specialization) {
+                        $select.append($('<option>', {
+                            value: specialization.name,
+                            text: specialization.name
+                        }));
+                    });
+
+                    $select.prop('disabled', false);
+                },
+                error: function() {
+                    $select.empty().append(
+                        $('<option>', { value: '', text: 'Không thể tải chuyên khoa' })
+                    );
+                }
+            });
+        }
+
         function loadDoctors() {
             const name = $('#searchName').val().trim();
-            const spec = $('#searchSpec').val().trim();
+            const spec = ($('#searchSpec').val() || '').trim();
 
             $('#doctorListContainer').html(`
                 <div class="col-12 text-center py-5 text-muted">
@@ -115,11 +145,13 @@
         }
 
         $(document).ready(function() {
+            loadSpecializations();
             loadDoctors();
             $('#btnSearch').click(loadDoctors);
-            $('#searchName, #searchSpec').on('keypress', function(e) {
+            $('#searchName').on('keypress', function(e) {
                 if (e.which === 13) loadDoctors();
             });
+            $('#searchSpec').on('change', loadDoctors);
         });
     </script>
 }

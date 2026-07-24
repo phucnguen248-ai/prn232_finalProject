@@ -67,7 +67,7 @@
 
                 <div class="mb-4">
                     <label class="form-label fw-semibold">Lý do khám / Triệu chứng bệnh <span class="text-danger">*</span></label>
-                    <textarea id="reason" class="form-control" rows="3" placeholder="Mô tả triệu chứng hoặc nhu cầu khám (từ 10 đến 500 ký tự)..." required></textarea>
+                    <textarea id="reason" class="form-control" rows="3" placeholder="Mô tả triệu chứng hoặc nhu cầu khám..." required></textarea>
                 </div>
 
                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
@@ -127,6 +127,12 @@
 
                 if (!scheduleId || scheduleId <= 0) {
                     toastr.warning('Vui lòng chọn một khung giờ ca khám!');
+                    return;
+                }
+
+                if (reason.length < 10 || reason.length > 500) {
+                    toastr.warning('Lý do khám phải từ 10 đến 500 ký tự.');
+                    $('#reason').trigger('focus');
                     return;
                 }
 

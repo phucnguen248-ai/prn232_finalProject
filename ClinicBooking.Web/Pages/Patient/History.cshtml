@@ -37,7 +37,7 @@
                     <th scope="col">Thời Gian Khám</th>
                     <th scope="col">Lý Do Khám</th>
                     <th scope="col">Trạng Thái</th>
-                    <th scope="col">Thao Tác Hủy Lịch</th>
+                    <th scope="col">Thao Tác</th>
                 </tr>
             </thead>
             <tbody id="historyTableBody">
@@ -48,6 +48,65 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+</div>
+
+<div class="modal fade" id="appointmentDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-calendar2-check me-2"></i>Chi Tiết Lịch Hẹn
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-4">
+                    <div>
+                        <div class="text-muted small">Mã lịch hẹn</div>
+                        <div id="detailAppointmentId" class="fs-4 fw-bold text-brand"></div>
+                    </div>
+                    <div class="text-sm-end">
+                        <div class="text-muted small mb-1">Trạng thái</div>
+                        <span id="detailStatus" class="badge badge-status"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small mb-1">Bác sĩ phụ trách</div>
+                            <div id="detailDoctorName" class="fw-bold fs-5"></div>
+                            <div id="detailSpecialization" class="text-brand fw-semibold mt-1"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small mb-1">Thời gian khám</div>
+                            <div id="detailAppointmentDate" class="fw-bold"></div>
+                            <div id="detailAppointmentTime" class="text-secondary mt-1"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded border">
+                            <div class="text-muted small mb-1">Lý do khám / Triệu chứng</div>
+                            <div id="detailReason" class="fw-semibold text-break"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Thời điểm đặt lịch</div>
+                        <div id="detailCreatedAt" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Quyền hủy lịch</div>
+                        <div id="detailCancellation" class="fw-semibold"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary-gradient px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -77,11 +136,51 @@
 
 @section Scripts {
     <script>
+        let historyCache = [];
+
         $(document).ready(function() {
             if (!requireRole(['Patient'])) return;
 
             const cancelModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelModal'));
+            const appointmentDetailModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('appointmentDetailModal'));
             loadHistory();
+
+            $(document).on('click', '.btn-view-appt', function() {
+                const appointmentId = Number($(this).data('appt-id'));
+                const appointment = historyCache.find(item => item.appointmentId === appointmentId);
+                if (!appointment) {
+                    toastr.error('Không tìm thấy thông tin lịch hẹn.');
+                    return;
+                }
+
+                const status = getStatusDisplay(appointment.status);
+                const dateText = new Date(`${appointment.slotDate}T00:00:00`).toLocaleDateString('vi-VN');
+                const timeText = `${appointment.startTime.substring(0, 5)} - ${appointment.endTime.substring(0, 5)}`;
+                const createdAtText = new Date(appointment.createdAt).toLocaleString('vi-VN');
+
+                $('#detailAppointmentId').text(`#${appointment.appointmentId}`);
+                $('#detailDoctorName').text(appointment.doctorName);
+                $('#detailSpecialization').text(appointment.specializationName);
+                $('#detailAppointmentDate').text(dateText);
+                $('#detailAppointmentTime').text(timeText);
+                $('#detailReason').text(appointment.reason);
+                $('#detailCreatedAt').text(createdAtText);
+                $('#detailStatus')
+                    .attr('class', `badge ${status.badgeClass} badge-status`)
+                    .text(status.text);
+
+                if (appointment.status === 'Confirmed') {
+                    $('#detailCancellation')
+                        .attr('class', appointment.canCancel ? 'fw-semibold text-success' : 'fw-semibold text-danger')
+                        .text(appointment.canCancel ? 'Đang trong thời hạn được phép hủy' : 'Đã hết thời hạn được phép hủy');
+                } else {
+                    $('#detailCancellation')
+                        .attr('class', 'fw-semibold text-muted')
+                        .text('Không áp dụng với trạng thái hiện tại');
+                }
+
+                appointmentDetailModal.show();
+            });
 
             $(document).on('click', '.btn-cancel-appt', function() {
                 const apptId = $(this).data('appt-id');
@@ -127,7 +226,8 @@
                 type: 'GET',
                 headers: getAuthHeaders(),
                 success: function(history) {
-                    renderHistoryTable(history);
+                    historyCache = Array.isArray(history) ? history : [];
+                    renderHistoryTable(historyCache);
                 },
                 error: function(xhr) {
                     if (handleAuthError(xhr)) return;
@@ -142,6 +242,17 @@
                     `);
                 }
             });
+        }
+
+        function getStatusDisplay(status) {
+            switch(status) {
+                case 'Confirmed': return { badgeClass: 'badge-confirmed', text: 'Đã Xác Nhận' };
+                case 'CheckedIn': return { badgeClass: 'badge-checkedin', text: 'Đã Check-in' };
+                case 'Completed': return { badgeClass: 'badge-completed', text: 'Hoàn Tất Khám' };
+                case 'Cancelled': return { badgeClass: 'badge-cancelled', text: 'Đã Hủy Lịch' };
+                case 'NoShow': return { badgeClass: 'badge-noshow', text: 'Bỏ Hẹn (No-Show)' };
+                default: return { badgeClass: 'bg-secondary', text: status || 'Không xác định' };
+            }
         }
 
         function renderHistoryTable(list) {
@@ -159,16 +270,7 @@
 
             let html = '';
             list.forEach(item => {
-                let badgeClass = 'bg-secondary';
-                let statusText = item.status;
-
-                switch(item.status) {
-                    case 'Confirmed': badgeClass = 'badge-confirmed'; statusText = 'Đã Xác Nhận'; break;
-                    case 'CheckedIn': badgeClass = 'badge-checkedin'; statusText = 'Đã Check-in'; break;
-                    case 'Completed': badgeClass = 'badge-completed'; statusText = 'Hoàn Tất Khám'; break;
-                    case 'Cancelled': badgeClass = 'badge-cancelled'; statusText = 'Đã Hủy Lịch'; break;
-                    case 'NoShow': badgeClass = 'badge-noshow'; statusText = 'Bỏ Hẹn (No-Show)'; break;
-                }
+                const status = getStatusDisplay(item.status);
 
                 const dateStr = new Date(`${item.slotDate}T00:00:00`).toLocaleDateString('vi-VN');
                 const timeStr = `${item.startTime.substring(0,5)} - ${item.endTime.substring(0,5)}`;
@@ -176,17 +278,20 @@
                 const specializationName = escapeHtml(item.specializationName);
                 const reason = escapeHtml(item.reason);
 
-                let actionBtn = '';
+                let actionBtn = `
+                    <button class="btn btn-outline-primary btn-sm fw-semibold btn-view-appt me-1" data-appt-id="${item.appointmentId}">
+                        <i class="bi bi-eye me-1"></i> Chi Tiết
+                    </button>
+                `;
+
                 if (item.status === 'Confirmed' && item.canCancel) {
-                    actionBtn = `
+                    actionBtn += `
                         <button class="btn btn-outline-danger btn-sm fw-semibold btn-cancel-appt" data-appt-id="${item.appointmentId}">
                             <i class="bi bi-x-lg me-1"></i> Hủy Lịch
                         </button>
                     `;
                 } else if (item.status === 'Confirmed' && !item.canCancel) {
-                    actionBtn = `<span class="text-muted small" title="Không còn trong thời hạn được phép hủy"><i class="bi bi-lock me-1"></i> Không thể hủy</span>`;
-                } else {
-                    actionBtn = `<span class="text-muted small">-</span>`;
+                    actionBtn += `<span class="text-muted small text-nowrap" title="Không còn trong thời hạn được phép hủy"><i class="bi bi-lock me-1"></i> Không thể hủy</span>`;
                 }
 
                 html += `
@@ -199,8 +304,8 @@
                             <div class="small text-muted"><i class="bi bi-clock me-1"></i> ${timeStr}</div>
                         </td>
                         <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${reason}">${reason}</span></td>
-                        <td><span class="badge ${badgeClass} badge-status">${statusText}</span></td>
-                        <td>${actionBtn}</td>
+                        <td><span class="badge ${status.badgeClass} badge-status">${status.text}</span></td>
+                        <td class="text-nowrap">${actionBtn}</td>
                     </tr>
                 `;
             });
