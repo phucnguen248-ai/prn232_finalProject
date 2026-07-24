@@ -143,6 +143,61 @@ body {
     border-bottom: 4px solid var(--accent-gold);
 }
 
+.text-brand {
+    color: var(--primary-blue) !important;
+}
+
+.patient-page-icon,
+.doctor-avatar {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+}
+
+.patient-page-icon {
+    background: var(--light-gold);
+    color: var(--dark-gold);
+}
+
+.doctor-avatar {
+    background: var(--light-blue);
+    color: var(--primary-blue);
+}
+
+.patient-info-banner {
+    padding: 1rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: var(--light-blue);
+    color: #1e3a8a;
+}
+
+.slot-btn {
+    min-width: 110px;
+    margin: 4px;
+    border: 1px solid var(--primary-blue);
+    border-radius: 8px;
+    color: var(--primary-blue);
+    font-weight: 500;
+}
+
+.slot-btn:hover,
+.slot-btn.is-selected {
+    border-color: var(--primary-blue);
+    background: var(--primary-blue);
+    color: #ffffff;
+}
+
+.badge-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
 /* Status Badges */
 .badge-confirmed {
     background-color: #dbeafe;

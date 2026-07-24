@@ -10,10 +10,38 @@ namespace ClinicBooking.Api.Controllers;
 public class SchedulesController : ControllerBase
 {
     private readonly IScheduleBatchService _scheduleBatchService;
+    private readonly IBookingService _bookingService;
 
-    public SchedulesController(IScheduleBatchService scheduleBatchService)
+    public SchedulesController(
+        IScheduleBatchService scheduleBatchService,
+        IBookingService bookingService)
     {
         _scheduleBatchService = scheduleBatchService;
+        _bookingService = bookingService;
+    }
+
+    /// <summary>
+    /// Lấy danh sách slot khám còn trống của Bác sĩ theo ngày.
+    /// </summary>
+    [HttpGet("available-slots")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAvailableSlots(
+        [FromQuery] int doctorId,
+        [FromQuery] string date)
+    {
+        if (doctorId <= 0)
+        {
+            return BadRequest(new { message = "Mã Bác sĩ không hợp lệ." });
+        }
+
+        if (!DateOnly.TryParse(date, out var slotDate))
+        {
+            return BadRequest(new { message = "Ngày không hợp lệ. Định dạng đúng: YYYY-MM-DD." });
+        }
+
+        var slots = await _bookingService.GetAvailableSlotsAsync(doctorId, slotDate);
+        return Ok(slots);
     }
 
     /// <summary>

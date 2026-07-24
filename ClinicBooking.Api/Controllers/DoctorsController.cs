@@ -41,6 +41,33 @@ public class DoctorsController : ControllerBase
     }
 
     /// <summary>
+    /// Tra cứu Bác sĩ đang hoạt động cho luồng đặt lịch của bệnh nhân.
+    /// </summary>
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(IEnumerable<DoctorDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Search(
+        [FromQuery] string? name,
+        [FromQuery] string? specialization)
+    {
+        var doctors = (await _doctorService.GetAllAsync())
+            .Where(d => d.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            doctors = doctors.Where(d =>
+                d.FullName.Contains(name.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(specialization))
+        {
+            doctors = doctors.Where(d =>
+                d.SpecializationName.Contains(specialization.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Ok(doctors.OrderBy(d => d.FullName));
+    }
+
+    /// <summary>
     /// Lấy chi tiết hồ sơ Bác sĩ theo DoctorId
     /// </summary>
     [HttpGet("{id:int}")]

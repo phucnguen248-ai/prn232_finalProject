@@ -112,6 +112,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Patient booking
+builder.Services.AddScoped<IBookingService, BookingService>();
+
 var app = builder.Build();
 
 // Enable CORS

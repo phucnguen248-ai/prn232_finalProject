@@ -60,6 +60,8 @@
 @section Scripts {
 <script>
     $(document).ready(function() {
+        if (!requireRole(['Staff', 'Admin'])) return;
+
         // Auto search on enter key
         $("#input-search-query").on("keypress", function(e) {
             if (e.which === 13) {

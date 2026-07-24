@@ -160,6 +160,24 @@ public static class DbInitializer
                 Status = ScheduleStatus.Available.ToString(),
                 CreatedAt = DateTime.UtcNow
             },
+            new Schedule
+            {
+                DoctorId = doc1Profile.DoctorId,
+                SlotDate = today,
+                StartTime = new TimeOnly(14, 0),
+                EndTime = new TimeOnly(15, 0),
+                Status = ScheduleStatus.Available.ToString(),
+                CreatedAt = DateTime.UtcNow
+            },
+            new Schedule
+            {
+                DoctorId = doc1Profile.DoctorId,
+                SlotDate = today,
+                StartTime = new TimeOnly(15, 0),
+                EndTime = new TimeOnly(16, 0),
+                Status = ScheduleStatus.Available.ToString(),
+                CreatedAt = DateTime.UtcNow
+            },
             // Tomorrow Slots for Doctor 2
             new Schedule
             {

@@ -213,6 +213,10 @@
             data: JSON.stringify({ email: email, password: password }),
             success: function(response) {
                 setAuthSession(response.token, response.user);
+                const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+                const safeReturnUrl = returnUrl && returnUrl.startsWith("/") && !returnUrl.startsWith("//")
+                    ? returnUrl
+                    : null;
 
                 if (response.user.role === "Admin") {
                     window.location.href = "/Admin/Dashboard";
@@ -221,7 +225,7 @@
                 } else if (response.user.role === "Doctor") {
                     window.location.href = "/Doctor/Workspace";
                 } else {
-                    window.location.href = "/";
+                    window.location.href = safeReturnUrl || "/";
                 }
             },
             error: function(xhr) {

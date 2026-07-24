@@ -1,0 +1,316 @@
+@page
+@model ClinicBooking.Web.Pages.Patient.HistoryModel
+@{
+    ViewData["Title"] = "Lịch Sử Đặt Hẹn Khám Bệnh";
+}
+
+<div class="card card-premium p-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div class="d-flex align-items-center">
+            <div class="patient-page-icon me-3">
+                <i class="bi bi-clock-history fs-2"></i>
+            </div>
+            <div>
+                <h3 class="text-dark fw-bold mb-1">Lịch Sử Đặt Lịch Hẹn Khám Bệnh</h3>
+                <p class="text-muted mb-0">Xem danh sách các cuộc hẹn và quản lý yêu cầu hủy lịch.</p>
+            </div>
+        </div>
+        <a href="/Booking/Index" class="btn btn-gold">
+            <i class="bi bi-plus-lg me-1"></i> Đặt Lịch Mới
+        </a>
+    </div>
+
+    <div class="patient-info-banner d-flex align-items-start mb-4" role="alert">
+        <i class="bi bi-info-circle-fill fs-3 me-3"></i>
+        <div>
+            <strong>Quy tắc Hủy Lịch (Grace Period):</strong> Bạn được phép hủy lịch nếu thực hiện trong vòng <strong>15 phút</strong> sau khi đặt thành công, hoặc trước giờ khám <strong>ít nhất 2 tiếng</strong>.
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Mã Hẹn</th>
+                    <th scope="col">Bác Sĩ</th>
+                    <th scope="col">Chuyên Khoa</th>
+                    <th scope="col">Thời Gian Khám</th>
+                    <th scope="col">Lý Do Khám</th>
+                    <th scope="col">Trạng Thái</th>
+                    <th scope="col">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody">
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        <div class="spinner-border text-brand me-2" role="status"></div> Đang tải lịch sử hẹn...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="appointmentDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-calendar2-check me-2"></i>Chi Tiết Lịch Hẹn
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-4">
+                    <div>
+                        <div class="text-muted small">Mã lịch hẹn</div>
+                        <div id="detailAppointmentId" class="fs-4 fw-bold text-brand"></div>
+                    </div>
+                    <div class="text-sm-end">
+                        <div class="text-muted small mb-1">Trạng thái</div>
+                        <span id="detailStatus" class="badge badge-status"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small mb-1">Bác sĩ phụ trách</div>
+                            <div id="detailDoctorName" class="fw-bold fs-5"></div>
+                            <div id="detailSpecialization" class="text-brand fw-semibold mt-1"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-muted small mb-1">Thời gian khám</div>
+                            <div id="detailAppointmentDate" class="fw-bold"></div>
+                            <div id="detailAppointmentTime" class="text-secondary mt-1"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded border">
+                            <div class="text-muted small mb-1">Lý do khám / Triệu chứng</div>
+                            <div id="detailReason" class="fw-semibold text-break"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Thời điểm đặt lịch</div>
+                        <div id="detailCreatedAt" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Quyền hủy lịch</div>
+                        <div id="detailCancellation" class="fw-semibold"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary-gradient px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Xác Nhận Hủy Lịch Hẹn</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2 fs-6">Bạn có chắc chắn muốn hủy cuộc hẹn này không?</p>
+                <div class="p-3 bg-light rounded border text-secondary small">
+                    <i class="bi bi-exclamation-triangle me-1 text-warning"></i> Khi hủy thành công, khung giờ ca khám sẽ tự động được hoàn trả cho bệnh nhân khác đăng ký.
+                </div>
+                <input type="hidden" id="cancelAppointmentId" value="0" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary fw-semibold" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" id="btnConfirmCancel" class="btn btn-danger fw-bold">
+                    <i class="bi bi-slash-circle me-1"></i> Đồng Ý Hủy Lịch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let historyCache = [];
+
+        $(document).ready(function() {
+            if (!requireRole(['Patient'])) return;
+
+            const cancelModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelModal'));
+            const appointmentDetailModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('appointmentDetailModal'));
+            loadHistory();
+
+            $(document).on('click', '.btn-view-appt', function() {
+                const appointmentId = Number($(this).data('appt-id'));
+                const appointment = historyCache.find(item => item.appointmentId === appointmentId);
+                if (!appointment) {
+                    toastr.error('Không tìm thấy thông tin lịch hẹn.');
+                    return;
+                }
+
+                const status = getStatusDisplay(appointment.status);
+                const dateText = new Date(`${appointment.slotDate}T00:00:00`).toLocaleDateString('vi-VN');
+                const timeText = `${appointment.startTime.substring(0, 5)} - ${appointment.endTime.substring(0, 5)}`;
+                const createdAtText = new Date(appointment.createdAt).toLocaleString('vi-VN');
+
+                $('#detailAppointmentId').text(`#${appointment.appointmentId}`);
+                $('#detailDoctorName').text(appointment.doctorName);
+                $('#detailSpecialization').text(appointment.specializationName);
+                $('#detailAppointmentDate').text(dateText);
+                $('#detailAppointmentTime').text(timeText);
+                $('#detailReason').text(appointment.reason);
+                $('#detailCreatedAt').text(createdAtText);
+                $('#detailStatus')
+                    .attr('class', `badge ${status.badgeClass} badge-status`)
+                    .text(status.text);
+
+                if (appointment.status === 'Confirmed') {
+                    $('#detailCancellation')
+                        .attr('class', appointment.canCancel ? 'fw-semibold text-success' : 'fw-semibold text-danger')
+                        .text(appointment.canCancel ? 'Đang trong thời hạn được phép hủy' : 'Đã hết thời hạn được phép hủy');
+                } else {
+                    $('#detailCancellation')
+                        .attr('class', 'fw-semibold text-muted')
+                        .text('Không áp dụng với trạng thái hiện tại');
+                }
+
+                appointmentDetailModal.show();
+            });
+
+            $(document).on('click', '.btn-cancel-appt', function() {
+                const apptId = $(this).data('appt-id');
+                $('#cancelAppointmentId').val(apptId);
+                cancelModal.show();
+            });
+
+            $('#btnConfirmCancel').click(function() {
+                const apptId = $('#cancelAppointmentId').val();
+                if (!apptId || apptId <= 0) return;
+
+                $('#btnConfirmCancel').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Đang hủy...');
+
+                $.ajax({
+                    url: `${API_BASE_URL}/appointments/${apptId}/cancel`,
+                    type: 'PATCH',
+                    headers: getAuthHeaders(),
+                    success: function(res) {
+                        cancelModal.hide();
+                        $('#btnConfirmCancel').prop('disabled', false).html('<i class="bi bi-slash-circle me-1"></i> Đồng Ý Hủy Lịch');
+                        toastr.success(res.message || 'Hủy lịch hẹn thành công!');
+                        loadHistory();
+                    },
+                    error: function(xhr) {
+                        $('#btnConfirmCancel').prop('disabled', false).html('<i class="bi bi-slash-circle me-1"></i> Đồng Ý Hủy Lịch');
+                        cancelModal.hide();
+
+                        if (handleAuthError(xhr)) return;
+
+                        if (xhr.status === 400) {
+                            toastr.error(xhr.responseJSON?.message || 'Không thể hủy lịch: Đã vi phạm quy tắc Grace Period.');
+                        } else {
+                            toastr.error('Có lỗi xảy ra khi gửi yêu cầu hủy lịch.');
+                        }
+                    }
+                });
+            });
+        });
+
+        function loadHistory() {
+            $.ajax({
+                url: `${API_BASE_URL}/appointments/my-history`,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function(history) {
+                    historyCache = Array.isArray(history) ? history : [];
+                    renderHistoryTable(historyCache);
+                },
+                error: function(xhr) {
+                    if (handleAuthError(xhr)) return;
+
+                    $('#historyTableBody').html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-danger">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Không thể tải lịch sử hẹn. Vui lòng thử lại.
+                            </td>
+                        </tr>
+                    `);
+                }
+            });
+        }
+
+        function getStatusDisplay(status) {
+            switch(status) {
+                case 'Confirmed': return { badgeClass: 'badge-confirmed', text: 'Đã Xác Nhận' };
+                case 'CheckedIn': return { badgeClass: 'badge-checkedin', text: 'Đã Check-in' };
+                case 'Completed': return { badgeClass: 'badge-completed', text: 'Hoàn Tất Khám' };
+                case 'Cancelled': return { badgeClass: 'badge-cancelled', text: 'Đã Hủy Lịch' };
+                case 'NoShow': return { badgeClass: 'badge-noshow', text: 'Bỏ Hẹn (No-Show)' };
+                default: return { badgeClass: 'bg-secondary', text: status || 'Không xác định' };
+            }
+        }
+
+        function renderHistoryTable(list) {
+            if (!list || list.length === 0) {
+                $('#historyTableBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-folder2-open fs-2 d-block mb-2"></i>
+                            <p class="mb-0">Bạn chưa có lịch hẹn khám nào.</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            list.forEach(item => {
+                const status = getStatusDisplay(item.status);
+
+                const dateStr = new Date(`${item.slotDate}T00:00:00`).toLocaleDateString('vi-VN');
+                const timeStr = `${item.startTime.substring(0,5)} - ${item.endTime.substring(0,5)}`;
+                const doctorName = escapeHtml(item.doctorName);
+                const specializationName = escapeHtml(item.specializationName);
+                const reason = escapeHtml(item.reason);
+
+                let actionBtn = `
+                    <button class="btn btn-outline-primary btn-sm fw-semibold btn-view-appt me-1" data-appt-id="${item.appointmentId}">
+                        <i class="bi bi-eye me-1"></i> Chi Tiết
+                    </button>
+                `;
+
+                if (item.status === 'Confirmed' && item.canCancel) {
+                    actionBtn += `
+                        <button class="btn btn-outline-danger btn-sm fw-semibold btn-cancel-appt" data-appt-id="${item.appointmentId}">
+                            <i class="bi bi-x-lg me-1"></i> Hủy Lịch
+                        </button>
+                    `;
+                } else if (item.status === 'Confirmed' && !item.canCancel) {
+                    actionBtn += `<span class="text-muted small text-nowrap" title="Không còn trong thời hạn được phép hủy"><i class="bi bi-lock me-1"></i> Không thể hủy</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="fw-bold text-brand">#${item.appointmentId}</td>
+                        <td class="fw-semibold">${doctorName}</td>
+                        <td><span class="badge bg-light text-dark border">${specializationName}</span></td>
+                        <td>
+                            <div><i class="bi bi-calendar3 me-1 text-brand"></i> ${dateStr}</div>
+                            <div class="small text-muted"><i class="bi bi-clock me-1"></i> ${timeStr}</div>
+                        </td>
+                        <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${reason}">${reason}</span></td>
+                        <td><span class="badge ${status.badgeClass} badge-status">${status.text}</span></td>
+                        <td class="text-nowrap">${actionBtn}</td>
+                    </tr>
+                `;
+            });
+
+            $('#historyTableBody').html(html);
+        }
+    </script>
+}

@@ -1,10 +1,157 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Trang chủ & Tra cứu Bác sĩ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero-section mb-4 text-center">
+    <h1 class="display-5 fw-bold mb-2">Hệ Thống Đặt Lịch Khám Bệnh Trực Tuyến</h1>
+    <p class="lead mb-3">Chủ động tra cứu Bác sĩ, chọn khung giờ rảnh và quản lý lịch hẹn nhanh chóng.</p>
+    <a href="/Booking/Index" class="btn btn-gold btn-lg px-4 py-2">
+        <i class="bi bi-calendar-plus me-2"></i>Đặt Lịch Khám Ngay
+    </a>
 </div>
+
+<div class="card card-premium p-4 mb-4">
+    <h4 class="mb-3 text-brand"><i class="bi bi-search me-2"></i>Tra cứu & Tìm kiếm Bác sĩ</h4>
+    <div class="row g-3">
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Tên Bác sĩ</label>
+            <input type="text" id="searchName" class="form-control" placeholder="Nhập tên bác sĩ (Ví dụ: An, Bình...)..." />
+        </div>
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Chuyên khoa</label>
+            <select id="searchSpec" class="form-select" disabled>
+                <option value="">Đang tải chuyên khoa...</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button id="btnSearch" class="btn btn-primary-gradient w-100">
+                <i class="bi bi-funnel me-1"></i> Lọc dữ liệu
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="doctorListContainer">
+    <div class="col-12 text-center py-5 text-muted">
+        <div class="spinner-border text-brand" role="status"></div>
+        <p class="mt-2">Đang tải danh sách Bác sĩ từ hệ thống...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadSpecializations() {
+            const $select = $('#searchSpec');
+
+            $.ajax({
+                url: `${API_BASE_URL}/specializations?$orderby=Name`,
+                type: 'GET',
+                success: function(specializations) {
+                    $select.empty().append(
+                        $('<option>', { value: '', text: 'Tất cả chuyên khoa' })
+                    );
+
+                    (specializations || []).forEach(function(specialization) {
+                        $select.append($('<option>', {
+                            value: specialization.name,
+                            text: specialization.name
+                        }));
+                    });
+
+                    $select.prop('disabled', false);
+                },
+                error: function() {
+                    $select.empty().append(
+                        $('<option>', { value: '', text: 'Không thể tải chuyên khoa' })
+                    );
+                }
+            });
+        }
+
+        function loadDoctors() {
+            const name = $('#searchName').val().trim();
+            const spec = ($('#searchSpec').val() || '').trim();
+
+            $('#doctorListContainer').html(`
+                <div class="col-12 text-center py-5 text-muted">
+                    <div class="spinner-border text-brand" role="status"></div>
+                    <p class="mt-2">Đang tìm kiếm Bác sĩ...</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: `${API_BASE_URL}/doctors/search?name=${encodeURIComponent(name)}&specialization=${encodeURIComponent(spec)}`,
+                type: 'GET',
+                success: function(data) {
+                    renderDoctorCards(data);
+                },
+                error: function() {
+                    $('#doctorListContainer').html(`
+                        <div class="col-12 text-center py-5 text-danger">
+                            <i class="bi bi-exclamation-triangle fs-1 d-block mb-3"></i>
+                            <h5>Không thể tải danh sách bác sĩ.</h5>
+                            <p class="mb-0">Vui lòng kiểm tra API và thử lại.</p>
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderDoctorCards(doctors) {
+            if (!doctors || doctors.length === 0) {
+                $('#doctorListContainer').html(`
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="bi bi-person-x fs-1 d-block mb-3 text-secondary"></i>
+                        <h5>Không tìm thấy bác sĩ phù hợp với từ khóa lọc.</h5>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            doctors.forEach(doc => {
+                const fullName = escapeHtml(doc.fullName);
+                const specializationName = escapeHtml(doc.specializationName || 'Chuyên khoa');
+                const licenseNumber = escapeHtml(doc.licenseNumber || 'N/A');
+                const bio = escapeHtml(doc.bio || 'Bác sĩ giàu kinh nghiệm, tận tâm với bệnh nhân.');
+
+                html += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card card-premium h-100">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="doctor-avatar me-3">
+                                        <i class="bi bi-person-badge fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-0 fw-bold">${fullName}</h5>
+                                        <span class="badge bg-primary-subtle text-primary-emphasis mt-1">${specializationName}</span>
+                                    </div>
+                                </div>
+                                <p class="card-text text-muted small mb-2"><i class="bi bi-patch-check me-1 text-warning"></i> CCHN: ${licenseNumber}</p>
+                                <p class="card-text text-muted small mb-3"><i class="bi bi-award me-1 text-success"></i> Kinh nghiệm: ${doc.yearsOfExperience || 0} năm</p>
+                                <p class="card-text text-secondary mb-4 flex-grow-1">${bio}</p>
+                                <a href="/Booking/Index?doctorId=${doc.doctorId}" class="btn btn-primary-gradient w-100 mt-auto">
+                                    <i class="bi bi-calendar2-check me-1"></i> Xem lịch & Đặt hẹn
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#doctorListContainer').html(html);
+        }
+
+        $(document).ready(function() {
+            loadSpecializations();
+            loadDoctors();
+            $('#btnSearch').click(loadDoctors);
+            $('#searchName').on('keypress', function(e) {
+                if (e.which === 13) loadDoctors();
+            });
+            $('#searchSpec').on('change', loadDoctors);
+        });
+    </script>
+}
