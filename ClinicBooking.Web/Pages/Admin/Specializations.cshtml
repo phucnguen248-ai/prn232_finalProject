@@ -1,0 +1,181 @@
+@page
+@model ClinicBooking.Web.Pages.Admin.SpecializationsModel
+@{
+    ViewData["Title"] = "Quản Lý Chuyên Khoa";
+}
+
+<div id="admin-subnav"></div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1">Quản Lý Chuyên Khoa</h2>
+        <p class="text-muted mb-0">Quản lý danh sách các chuyên khoa khám bệnh và OData API filter</p>
+    </div>
+    <button class="btn btn-primary-gradient px-4" onclick="openCreateModal()">
+        Thêm Chuyên Khoa Mới
+    </button>
+</div>
+
+<div class="card card-premium p-4">
+    <div class="table-responsive">
+        <table id="table-specializations" class="table table-hover align-middle w-100">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Tên Chuyên Khoa</th>
+                    <th>Mô Tả Chi Tiết</th>
+                    <th style="width: 140px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rendered via jQuery AJAX -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Create / Edit Specialization -->
+<div class="modal fade" id="modalSpec" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold" id="modalSpecTitle">Thêm Chuyên Khoa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-spec">
+                    <input type="hidden" id="spec-id" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên Chuyên Khoa <span class="text-danger">*</span></label>
+                        <input type="text" id="spec-name" class="form-control" required placeholder="Nội Khoa, Nhi Khoa..." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô Tả</label>
+                        <textarea id="spec-desc" class="form-control" rows="3" placeholder="Mô tả các bệnh lý thuộc chuyên khoa..."></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary-gradient">Lưu Thông Tin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let specTable;
+
+    $(document).ready(function () {
+        if (!requireRole(['Admin'])) return;
+        renderAdminSubNav("admin-subnav");
+
+        loadSpecializations();
+    });
+
+    function loadSpecializations() {
+        $.ajax({
+            url: `${API_BASE_URL}/specializations`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function (data) {
+                if ($.fn.DataTable.isDataTable('#table-specializations')) {
+                    $('#table-specializations').DataTable().destroy();
+                }
+
+                const rows = data.map(item => `
+                    <tr>
+                        <td class="fw-bold text-muted">#${item.specializationId}</td>
+                        <td class="fw-semibold text-primary">${item.name}</td>
+                        <td>${item.description || '<span class="text-muted font-italic">Chưa có mô tả</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1 px-2" title="Chỉnh sửa" onclick="openEditModal(${item.specializationId}, '${escapeQuotes(item.name)}', '${escapeQuotes(item.description)}')">
+                                Sửa
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger px-2" title="Xóa" onclick="deleteSpec(${item.specializationId})">
+                                Xóa
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                $('#table-specializations tbody').html(rows);
+                specTable = $('#table-specializations').DataTable({
+                    language: {
+                        search: "Tìm kiếm:",
+                        lengthMenu: "Hiển thị _MENU_ mục",
+                        info: "Hiển thị _START_ đến _END_ của _TOTAL_ mục",
+                        paginate: { first: "Đầu", last: "Cuối", next: "Sau", previous: "Trước" }
+                    }
+                });
+            },
+            error: function () {
+                alert("Không thể tải danh sách chuyên khoa.");
+            }
+        });
+    }
+
+    function escapeQuotes(str) {
+        return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function openCreateModal() {
+        $("#spec-id").val("0");
+        $("#spec-name").val("");
+        $("#spec-desc").val("");
+        $("#modalSpecTitle").text("Thêm Chuyên Khoa Mới");
+        new bootstrap.Modal('#modalSpec').show();
+    }
+
+    function openEditModal(id, name, desc) {
+        $("#spec-id").val(id);
+        $("#spec-name").val(name);
+        $("#spec-desc").val(desc);
+        $("#modalSpecTitle").text("Cập Nhật Chuyên Khoa");
+        new bootstrap.Modal('#modalSpec').show();
+    }
+
+    $("#form-spec").on("submit", function (e) {
+        e.preventDefault();
+        const id = parseInt($("#spec-id").val());
+        const payload = {
+            name: $("#spec-name").val().trim(),
+            description: $("#spec-desc").val().trim()
+        };
+
+        const url = id === 0 ? `${API_BASE_URL}/specializations` : `${API_BASE_URL}/specializations/${id}`;
+        const type = id === 0 ? "POST" : "PUT";
+
+        $.ajax({
+            url: url,
+            type: type,
+            headers: getAuthHeaders(),
+            data: JSON.stringify(payload),
+            success: function () {
+                bootstrap.Modal.getInstance('#modalSpec').hide();
+                loadSpecializations();
+            },
+            error: function (xhr) {
+                alert(xhr.responseJSON?.message || "Có lỗi xảy ra khi lưu chuyên khoa.");
+            }
+        });
+    });
+
+    function deleteSpec(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa chuyên khoa này?")) return;
+
+        $.ajax({
+            url: `${API_BASE_URL}/specializations/${id}`,
+            type: "DELETE",
+            headers: getAuthHeaders(),
+            success: function () {
+                loadSpecializations();
+            },
+            error: function (xhr) {
+                alert(xhr.responseJSON?.message || "Không thể xóa chuyên khoa.");
+            }
+        });
+    }
+</script>
+}

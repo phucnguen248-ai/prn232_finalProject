@@ -40,8 +40,6 @@
 
 @section Scripts {
     <script>
-        const API_URL = 'https://localhost:7129';
-
         function loadDoctors() {
             const name = $('#searchName').val().trim();
             const spec = $('#searchSpec').val().trim();
@@ -54,7 +52,7 @@
             `);
 
             $.ajax({
-                url: `${API_URL}/api/doctors?name=${encodeURIComponent(name)}&specialization=${encodeURIComponent(spec)}`,
+                url: `${API_BASE_URL}/doctors/search?name=${encodeURIComponent(name)}&specialization=${encodeURIComponent(spec)}`,
                 type: 'GET',
                 success: function(data) {
                     renderDoctorCards(data);

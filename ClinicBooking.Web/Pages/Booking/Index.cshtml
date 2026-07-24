@@ -76,8 +76,6 @@
 
 @section Scripts {
     <script>
-        const API_URL = 'https://localhost:7129';
-
         $(document).ready(function() {
             const today = new Date().toISOString().split('T')[0];
             $('#bookingDate').val(today);
@@ -123,7 +121,7 @@
                 $('#btnSubmitBooking').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang xử lý đặt lịch...');
 
                 $.ajax({
-                    url: `${API_URL}/api/appointments`,
+                    url: `${API_BASE_URL}/appointments`,
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(bookingDto),
@@ -164,7 +162,7 @@
             );
 
             $.ajax({
-                url: `${API_URL}/api/doctors`,
+                url: `${API_BASE_URL}/doctors/search`,
                 type: 'GET',
                 success: function(doctors) {
                     $select.empty();
@@ -216,7 +214,7 @@
             `);
 
             $.ajax({
-                url: `${API_URL}/api/schedules/available-slots?doctorId=${doctorId}&date=${date}`,
+                url: `${API_BASE_URL}/schedules/available-slots?doctorId=${doctorId}&date=${date}`,
                 type: 'GET',
                 success: function(slots) {
                     renderSlots(slots);

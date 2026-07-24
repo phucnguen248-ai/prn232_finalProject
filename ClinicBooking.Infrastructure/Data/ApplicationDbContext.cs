@@ -102,7 +102,8 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(s => s.DoctorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.Property(s => s.Status).IsRequired().HasMaxLength(20);
+            entity.Property(s => s.Status).IsRequired().HasMaxLength(30);
+            entity.Property(s => s.CancelReason).HasMaxLength(500);
             entity.Property(s => s.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 

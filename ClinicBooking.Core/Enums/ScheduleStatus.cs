@@ -3,5 +3,7 @@ namespace ClinicBooking.Core.Enums;
 public enum ScheduleStatus
 {
     Available,
-    Booked
+    Booked,
+    CancelRequested,
+    Cancelled
 }

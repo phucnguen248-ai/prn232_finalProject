@@ -1,87 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Clinic Appointment Booking System</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <title>@ViewData["Title"] - Hệ Thống Đặt Lịch Khám ClinicBooking</title>
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Patient booking icons and notifications -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+    <!-- Custom Site CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/ClinicBooking.Web.styles.css" asp-append-version="true" />
-    <style>
-        .navbar-brand { font-weight: 700; color: #0d6efd !important; }
-        .hero-section { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: white; border-radius: 12px; padding: 45px 30px; }
-        .card-custom { border-radius: 12px; border: 1px solid #e0e0e0; transition: transform 0.2s; }
-        .card-custom:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-        .slot-btn { min-width: 110px; margin: 4px; border-radius: 8px; font-weight: 500; }
-        .badge-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 20px; }
-    </style>
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 py-3">
+        <nav class="navbar navbar-expand-lg navbar-light navbar-custom sticky-top">
             <div class="container">
-                <a class="navbar-brand fs-4" asp-area="" asp-page="/Index">
-                    <i class="fa-solid fa-hospital-user text-primary me-2"></i>Clinic Booking
+                <a class="navbar-brand navbar-brand-custom text-decoration-none" href="/">
+                    Clinic<span>Booking</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1 ms-3">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark fw-semibold" asp-area="" asp-page="/Index">
-                                <i class="fa-solid fa-house me-1 text-secondary"></i>Trang chủ
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark fw-semibold" asp-area="" asp-page="/Booking/Index">
-                                <i class="fa-solid fa-calendar-check me-1 text-primary"></i>Đặt lịch khám
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark fw-semibold" asp-area="" asp-page="/Patient/History">
-                                <i class="fa-solid fa-clock-rotate-left me-1 text-success"></i>Lịch sử đặt hẹn
-                            </a>
-                        </li>
+                <div class="collapse navbar-collapse" id="navbarMain">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0" id="role-nav-container">
+                        <!-- Dynamic Role Links rendered via site.js -->
                     </ul>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-light text-primary border border-primary px-3 py-2 me-2">
-                            <i class="fa-solid fa-user-injured me-1"></i>Bệnh nhân
-                        </span>
-                    </div>
+                    <ul class="navbar-nav ms-auto align-items-center" id="auth-nav-container">
+                        <!-- Dynamic Auth State rendered via site.js -->
+                    </ul>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container mb-5">
-        <main role="main">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted bg-light py-3 mt-auto">
-        <div class="container text-center">
-            &copy; 2026 - Clinic Appointment Booking System | Grace Period Updated
+    <main role="main" class="flex-grow-1 py-4">
+        <div class="container">
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="border-top text-muted py-4 bg-white mt-auto">
+        <div class="container text-center fs-7">
+            &copy; 2026 - Clinic Appointment Booking System - Monolith Multi-Tier Architecture (.NET 8)
         </div>
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Patient booking notifications -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- Custom Site JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
-
     <script>
         toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "timeOut": "4000"
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: 4000
         };
     </script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

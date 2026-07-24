@@ -1,0 +1,446 @@
+@page
+@model ClinicBooking.Web.Pages.Doctor.WorkspaceModel
+@{
+    ViewData["Title"] = "Phòng Khám Bác Sĩ - Workspace";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="hero-section text-white p-4 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="fw-bold mb-1">Workspace Bác Sĩ</h2>
+                <p class="mb-0 text-white-50">Danh sách ca khám bệnh nhân và quản lý lịch trực cá nhân</p>
+            </div>
+            <button class="btn btn-gold px-4" onclick="refreshCurrentTab()">
+                Làm mới
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Selection -->
+<ul class="nav nav-pills nav-justified mb-4 bg-light p-2 rounded-3" id="doctor-workspace-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold py-3 fs-6 rounded-3" id="tab-patients-btn" data-bs-toggle="pill" data-bs-target="#tab-patients" type="button" role="tab">
+            1. Danh Sách Bệnh Nhân Trong Ngày
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold py-3 fs-6 rounded-3" id="tab-schedules-btn" data-bs-toggle="pill" data-bs-target="#tab-schedules" type="button" role="tab" onclick="loadMySchedules()">
+            2. Lịch Trực Cá Nhân & Xin Hủy Slot
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="doctor-tab-content">
+    <!-- TAB 1: TODAY PATIENTS -->
+    <div class="tab-pane fade show active" id="tab-patients" role="tabpanel">
+        <div class="card card-premium p-4">
+            <h4 class="fw-bold text-dark mb-3">Bệnh Nhân Chờ Khám Hôm Nay</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Khám</th>
+                            <th>Khung Giờ</th>
+                            <th>Tên Bệnh Nhân</th>
+                            <th>Số Điện Thoại</th>
+                            <th>Lý Do Khám</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-center" style="width: 220px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-doctor-workspace">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <div class="spinner-border text-primary me-2" role="status"></div>
+                                Đang tải danh sách bệnh nhân...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: MY SCHEDULES & REQUEST CANCEL -->
+    <div class="tab-pane fade" id="tab-schedules" role="tabpanel">
+        <div class="card card-premium p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold text-dark mb-0">Lịch Trực Được Phân Công</h4>
+                <span class="text-muted fs-7">Bạn có thể xin hủy ca trực chưa có bệnh nhân đặt nếu có việc đột xuất.</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Slot</th>
+                            <th>Ngày Trực</th>
+                            <th>Khung Giờ</th>
+                            <th>Trạng Thái Ca</th>
+                            <th>Ghi Chú Hủy Slot</th>
+                            <th class="text-center" style="width: 150px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-my-schedules">
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <div class="spinner-border text-primary me-2" role="status"></div>
+                                Đang tải lịch trực của bạn...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail Appointment Popup -->
+<div class="modal fade" id="modalAppointmentDetail" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold fs-6">Chi Tiết Lịch Hẹn Khám Bệnh</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6 border-end">
+                        <h6 class="fw-bold text-primary mb-3">Thông Tin Bệnh Nhân</h6>
+                        <p class="mb-2"><strong>Họ và Tên:</strong> <span id="detail-patient-name" class="fw-bold text-dark"></span></p>
+                        <p class="mb-2"><strong>Số Điện Thoại:</strong> <span id="detail-patient-phone" class="text-dark"></span></p>
+                        <p class="mb-2"><strong>Lý Do Đăng Ký Khám:</strong></p>
+                        <div class="p-3 bg-light rounded border text-dark fs-7" id="detail-reason"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-primary mb-3">Thông Tin Ca Khám</h6>
+                        <p class="mb-2"><strong>Mã Cuộc Hẹn:</strong> <span id="detail-id" class="badge bg-light text-dark border fw-bold"></span></p>
+                        <p class="mb-2"><strong>Ngày Khám:</strong> <span id="detail-date" class="fw-bold text-primary"></span></p>
+                        <p class="mb-2"><strong>Khung Giờ (Slot):</strong> <span id="detail-time" class="badge bg-info text-dark"></span></p>
+                        <p class="mb-2"><strong>Trạng Thái:</strong> <span id="detail-status"></span></p>
+                        <div id="detail-notes-container" class="mt-3 d-none">
+                            <p class="mb-1"><strong>Kết Quả / Chẩn Đoán Của Bác Sĩ:</strong></p>
+                            <div class="p-3 bg-success bg-opacity-10 text-success rounded border fs-7" id="detail-notes"></div>
+                        </div>
+                        <div id="detail-attachment-container" class="mt-3 d-none">
+                            <p class="mb-1"><strong>Ảnh Đơn Thuốc / Giấy Tờ Đính Kèm:</strong></p>
+                            <a id="detail-attachment-link" href="#" target="_blank" class="btn btn-outline-primary btn-sm">Xem Ảnh Giấy Tờ</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Complete Appointment (Notes & Image Attachment) -->
+<div class="modal fade" id="modalComplete" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold fs-6">Hoàn Tất Ca Khám & Ghi Nhận Kết Quả</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="form-complete">
+                    <input type="hidden" id="complete-appointment-id" value="0" />
+                    
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Bệnh nhân:</strong> <span id="complete-patient-name" class="text-primary fw-bold"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Lý do khám:</strong> <span id="complete-reason" class="text-dark"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ghi Chú Kết Quả & Chẩn Đoán Điều Trị <span class="text-danger">*</span></label>
+                        <textarea id="complete-notes" class="form-control" rows="4" required placeholder="Nhập kết quả khám, đơn thuốc chỉ định hoặc lời dặn của bác sĩ..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Đường Dẫn / Ảnh Đơn Thuốc, Kết Quả Xét Nghiệm (Tùy chọn)</label>
+                        <input type="text" id="complete-attachment" class="form-control" placeholder="Dán đường dẫn URL hình ảnh đơn thuốc hoặc kết quả xét nghiệm (VD: https://...)" />
+                        <small class="text-muted">Nhập đường dẫn ảnh giấy tờ đính kèm nếu cần lưu vào hồ sơ khám của bệnh nhân.</small>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            Xác Nhận Hoàn Thành
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Doctor Request Cancel Slot -->
+<div class="modal fade" id="modalRequestCancel" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold fs-6">Xin Hủy Ca Trực</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="form-request-cancel">
+                    <input type="hidden" id="cancel-schedule-id" value="0" />
+                    
+                    <div class="alert alert-warning border-0 mb-3">
+                        Yêu cầu xin hủy ca trực sẽ được gửi tới Admin kiểm duyệt.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lý Do Xin Hủy Ca Trực <span class="text-danger">*</span></label>
+                        <textarea id="cancel-reason" class="form-control" rows="3" required placeholder="Nhập lý do xin hủy (ví dụ: bận công tác đột xuất, lý do sức khỏe...)"></textarea>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Hủy Thao Tác</button>
+                        <button type="submit" class="btn btn-danger fw-bold px-4">
+                            Gửi Yêu Cầu Xin Hủy
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let todayAppointmentsCache = [];
+
+    $(document).ready(function() {
+        if (!requireRole(['Doctor'])) return;
+        loadTodayAppointments();
+    });
+
+    function refreshCurrentTab() {
+        if ($("#tab-patients-btn").hasClass("active")) {
+            loadTodayAppointments();
+        } else {
+            loadMySchedules();
+        }
+    }
+
+    function loadTodayAppointments() {
+        $.ajax({
+            url: `${API_BASE_URL}/DoctorDashboard/appointments/today`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                todayAppointmentsCache = data || [];
+                if (!data || data.length === 0) {
+                    $("#tbody-doctor-workspace").html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                Hôm nay bác sĩ không có ca khám nào.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                const rows = data.map(item => {
+                    let statusBadge = `<span class="badge badge-${item.status.toLowerCase()}">${item.status}</span>`;
+                    
+                    let actionBtns = `
+                        <button class="btn btn-sm btn-outline-primary px-3 me-1" onclick="openDetailModal(${item.appointmentId})">
+                            Chi Tiết
+                        </button>
+                    `;
+                    if (item.status === "CheckedIn") {
+                        actionBtns += `
+                            <button class="btn btn-sm btn-success fw-bold px-3" onclick="openCompleteModal(${item.appointmentId})">
+                                Khám & Kết Quả
+                            </button>
+                        `;
+                    } else if (item.status === "Completed") {
+                        actionBtns += `<span class="badge bg-success">Đã Khám Xong</span>`;
+                    } else if (item.status === "Confirmed") {
+                        actionBtns += `<span class="text-muted fs-7">Chờ Lễ tân Check-in</span>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">#${item.appointmentId}</td>
+                            <td><span class="badge bg-light text-dark border fw-bold">${item.startTime} - ${item.endTime}</span></td>
+                            <td class="fw-semibold text-dark">${item.patientName}</td>
+                            <td>${item.patientPhone}</td>
+                            <td class="text-truncate" style="max-width: 200px;">${item.reason}</td>
+                            <td>${statusBadge}</td>
+                            <td class="text-center">${actionBtns}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $("#tbody-doctor-workspace").html(rows);
+            },
+            error: function(xhr) {
+                showCustomAlert("Không thể tải danh sách ca khám. Vui lòng thử lại.", "Lỗi Tải Dữ Liệu", "error");
+            }
+        });
+    }
+
+    function openDetailModal(appointmentId) {
+        const item = todayAppointmentsCache.find(a => a.appointmentId === appointmentId);
+        if (!item) return;
+
+        $("#detail-id").text(`#${item.appointmentId}`);
+        $("#detail-patient-name").text(item.patientName);
+        $("#detail-patient-phone").text(item.patientPhone);
+        $("#detail-date").text(item.slotDate);
+        $("#detail-time").text(`${item.startTime} - ${item.endTime}`);
+        $("#detail-reason").text(item.reason);
+        $("#detail-status").html(`<span class="badge badge-${item.status.toLowerCase()}">${item.status}</span>`);
+
+        if (item.notes) {
+            $("#detail-notes-container").removeClass("d-none");
+            $("#detail-notes").text(item.notes);
+        } else {
+            $("#detail-notes-container").addClass("d-none");
+        }
+
+        if (item.attachmentUrl) {
+            $("#detail-attachment-container").removeClass("d-none");
+            $("#detail-attachment-link").attr("href", item.attachmentUrl);
+        } else {
+            $("#detail-attachment-container").addClass("d-none");
+        }
+
+        new bootstrap.Modal('#modalAppointmentDetail').show();
+    }
+
+    function openCompleteModal(appointmentId) {
+        const item = todayAppointmentsCache.find(a => a.appointmentId === appointmentId);
+        if (!item) return;
+
+        $("#complete-appointment-id").val(item.appointmentId);
+        $("#complete-patient-name").text(item.patientName);
+        $("#complete-reason").text(item.reason);
+        $("#complete-notes").val(item.notes || "");
+        $("#complete-attachment").val(item.attachmentUrl || "");
+        new bootstrap.Modal('#modalComplete').show();
+    }
+
+    function loadMySchedules() {
+        $.ajax({
+            url: `${API_BASE_URL}/schedules`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                if (!data || data.length === 0) {
+                    $("#tbody-my-schedules").html(`
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                Bạn chưa có ca trực nào được phân công.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                const rows = data.map(item => {
+                    let badgeClass = "bg-secondary";
+                    let statusLabel = item.status;
+                    let cancelBtn = "";
+
+                    if (item.status === "Available") {
+                        badgeClass = "bg-success";
+                        statusLabel = "Con Trống";
+                        cancelBtn = `
+                            <button class="btn btn-sm btn-outline-danger fw-bold rounded-pill" onclick="openRequestCancelModal(${item.scheduleId})">
+                                Xin Hủy Slot
+                            </button>
+                        `;
+                    } else if (item.status === "Booked") {
+                        badgeClass = "bg-warning text-dark";
+                        statusLabel = "Đã Đặt";
+                        cancelBtn = `<span class="text-muted fs-7">Đã Có Bệnh Nhân</span>`;
+                    } else if (item.status === "CancelRequested") {
+                        badgeClass = "bg-danger";
+                        statusLabel = "Chờ Admin Duyệt Hủy";
+                        cancelBtn = `<span class="text-danger fs-7 fw-semibold">Đã Gửi Đăng Ký Hủy</span>`;
+                    } else if (item.status === "Cancelled") {
+                        badgeClass = "bg-dark";
+                        statusLabel = "Đã Hủy";
+                    }
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">#${item.scheduleId}</td>
+                            <td class="fw-bold text-primary">${item.slotDate}</td>
+                            <td><span class="badge bg-light text-dark border fw-bold">${item.startTime} - ${item.endTime}</span></td>
+                            <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+                            <td>${item.cancelReason ? `<span class="text-danger fs-7">${item.cancelReason}</span>` : '-'}</td>
+                            <td class="text-center">${cancelBtn}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $("#tbody-my-schedules").html(rows);
+            }
+        });
+    }
+
+    function openRequestCancelModal(scheduleId) {
+        $("#cancel-schedule-id").val(scheduleId);
+        $("#cancel-reason").val("");
+        new bootstrap.Modal('#modalRequestCancel').show();
+    }
+
+    $("#form-request-cancel").on("submit", function(e) {
+        e.preventDefault();
+        const id = parseInt($("#cancel-schedule-id").val());
+        const reason = $("#cancel-reason").val().trim();
+
+        $.ajax({
+            url: `${API_BASE_URL}/DoctorDashboard/schedules/${id}/request-cancel`,
+            type: "POST",
+            headers: getAuthHeaders(),
+            data: JSON.stringify({ reason: reason }),
+            success: function(res) {
+                bootstrap.Modal.getInstance('#modalRequestCancel').hide();
+                showCustomAlert(res.message, "Thành Công", "success");
+                loadMySchedules();
+            },
+            error: function(xhr) {
+                showCustomAlert(xhr.responseJSON?.message || "Không thể gửi yêu cầu hủy ca trực.", "Lỗi", "error");
+            }
+        });
+    });
+
+    $("#form-complete").on("submit", function(e) {
+        e.preventDefault();
+        const id = parseInt($("#complete-appointment-id").val());
+        const notes = $("#complete-notes").val().trim();
+        const attachmentUrl = $("#complete-attachment").val().trim();
+
+        $.ajax({
+            url: `${API_BASE_URL}/appointments/${id}/complete`,
+            type: "PATCH",
+            headers: getAuthHeaders(),
+            data: JSON.stringify({ notes: notes, attachmentUrl: attachmentUrl }),
+            success: function(res) {
+                bootstrap.Modal.getInstance('#modalComplete').hide();
+                showCustomAlert("Ca khám đã được đánh dấu hoàn tất!", "Thành Công", "success");
+                loadTodayAppointments();
+            },
+            error: function(xhr) {
+                showCustomAlert(xhr.responseJSON?.message || "Không thể hoàn tất ca khám.", "Lỗi", "error");
+            }
+        });
+    });
+</script>
+}

@@ -1,0 +1,168 @@
+@page
+@model ClinicBooking.Web.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div id="admin-subnav"></div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="hero-section text-white p-4 shadow-sm d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="fw-bold mb-1">Bảng Điều Khiển Quản Trị Viên</h2>
+                <p class="mb-0 text-white-50">Tổng quan hệ thống phòng khám, quản lý danh mục và tạo tài khoản nhân sự nội bộ</p>
+            </div>
+            <a href="/Admin/CreateAccount" class="btn btn-gold px-4 shadow-sm">
+                Tạo Tài Khoản Nội Bộ
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stat Metric Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card card-premium p-3 border-start border-primary border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted fw-semibold fs-7">Chuyên Khoa Khám</span>
+                    <h2 class="fw-bold text-primary mb-0" id="stat-spec-count">-</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
+                    <i class="bi bi-bookmark-plus fs-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-premium p-3 border-start border-info border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted fw-semibold fs-7">Đội Ngũ Bác Sĩ</span>
+                    <h2 class="fw-bold text-info mb-0" id="stat-doctor-count">-</h2>
+                </div>
+                <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle">
+                    <i class="bi bi-person-badge fs-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-premium p-3 border-start border-warning border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted fw-semibold fs-7">Nhân Viên Lễ Tân</span>
+                    <h2 class="fw-bold text-warning mb-0" id="stat-staff-count">-</h2>
+                </div>
+                <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle">
+                    <i class="bi bi-person-workspace fs-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-premium p-3 border-start border-success border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted fw-semibold fs-7">Hệ Thống Trạng Thái</span>
+                    <h2 class="fw-bold text-success mb-0">Hoạt Động</h2>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle">
+                    <i class="bi bi-check-circle fs-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Navigation Shortcuts -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card card-premium p-4 h-100">
+            <h4 class="fw-bold text-dark mb-3"><i class="bi bi-sliders text-primary me-2"></i>Chức Năng Quản Lý Danh Mục</h4>
+            <p class="text-muted fs-7 mb-4">Thêm mới, cập nhật danh mục Chuyên khoa và Hồ sơ Bác sĩ sử dụng OData API.</p>
+            <div class="d-grid gap-2">
+                <a href="/Admin/Specializations" class="btn btn-outline-primary p-3 text-start rounded-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold fs-6"><i class="bi bi-bookmark-plus me-2"></i>Quản Lý Danh Mục Chuyên Khoa</div>
+                        <small class="text-muted">Cấu hình các chuyên khoa khám bệnh (Nội, Nhi, Tai Mũi Họng...)</small>
+                    </div>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="/Admin/Doctors" class="btn btn-outline-info p-3 text-start rounded-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold fs-6"><i class="bi bi-person-badge me-2"></i>Quản Lý Hồ Sơ Bác Sĩ</div>
+                        <small class="text-muted">Xem danh sách, phân chuyên khoa, cập nhật bằng cấp & kinh nghiệm</small>
+                    </div>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-premium p-4 h-100">
+            <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-gear text-primary me-2"></i>Chức Năng Tài Khoản & Vận Hành</h4>
+            <p class="text-muted fs-7 mb-4">Cấp tài khoản mới cho nhân sự phòng khám và hỗ trợ theo dõi vận hành lễ tân.</p>
+            <div class="d-grid gap-2">
+                <a href="/Admin/CreateAccount" class="btn btn-primary-gradient p-3 text-start rounded-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold fs-6"><i class="bi bi-person-plus-fill me-2"></i>Tạo Tài Khoản Nội Bộ (Bác sĩ / Lễ tân)</div>
+                        <small class="text-white-50">Tạo tài khoản Bác sĩ hoặc Nhân viên Lễ tân mới vào hệ thống</small>
+                    </div>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="/Staff/Reception" class="btn btn-outline-warning text-dark p-3 text-start rounded-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-bold fs-6"><i class="bi bi-reception-4 me-2"></i>Quầy Lễ Tân (Xem Check-in)</div>
+                        <small class="text-muted">Truy cập giao diện tiếp nhận bệnh nhân và xử lý No-Show</small>
+                    </div>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        if (!requireRole(['Admin'])) return;
+        renderAdminSubNav("admin-subnav");
+        loadDashboardStats();
+    });
+
+    function loadDashboardStats() {
+        // Get Specializations Count
+        $.ajax({
+            url: `${API_BASE_URL}/specializations`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                $("#stat-spec-count").text(data ? data.length : 0);
+            }
+        });
+
+        // Get Doctors Count
+        $.ajax({
+            url: `${API_BASE_URL}/doctors/list`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                $("#stat-doctor-count").text(data ? data.length : 0);
+            }
+        });
+
+        // Get Staff Count
+        $.ajax({
+            url: `${API_BASE_URL}/staff`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                $("#stat-staff-count").text(data ? data.length : 0);
+            }
+        });
+    }
+</script>
+}

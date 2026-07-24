@@ -74,8 +74,6 @@
 
 @section Scripts {
     <script>
-        const API_URL = 'https://localhost:7129';
-
         $(document).ready(function() {
             loadHistory();
 
@@ -92,7 +90,7 @@
                 $('#btnConfirmCancel').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang hủy...');
 
                 $.ajax({
-                    url: `${API_URL}/api/appointments/${apptId}/cancel`,
+                    url: `${API_BASE_URL}/appointments/${apptId}/cancel`,
                     type: 'PATCH',
                     headers: {
                         'X-User-Id': 4
@@ -119,7 +117,7 @@
 
         function loadHistory() {
             $.ajax({
-                url: `${API_URL}/api/appointments/my-history`,
+                url: `${API_BASE_URL}/appointments/my-history`,
                 type: 'GET',
                 headers: {
                     'X-User-Id': 4

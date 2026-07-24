@@ -1,0 +1,176 @@
+@page
+@model ClinicBooking.Web.Pages.Staff.ReceptionModel
+@{
+    ViewData["Title"] = "Quầy Lễ Tân - Tìm Kiếm & Check-in";
+}
+
+<div class="row justify-content-center mb-4">
+    <div class="col-md-10">
+        <div class="card card-premium p-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle me-3">
+                    <i class="bi bi-reception-4 fs-2"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Màn Hình Đón Tiếp Bệnh Nhân (Lễ Tân)</h3>
+                    <p class="text-muted mb-0">Tra cứu nhanh cuộc hẹn theo Số Điện Thoại, Tên Bệnh Nhân hoặc Mã Cuộc Hẹn</p>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-4">
+                <div class="col-md-9">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="input-search-query" class="form-control" placeholder="Nhập SĐT (vd: 0944444444) hoặc Mã cuộc hẹn..." />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary-gradient w-100 h-100 fs-6 fw-bold" onclick="searchAppointments()">
+                        <i class="bi bi-search me-2"></i>Tìm Cuộc Hẹn
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="table-reception">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Hẹn</th>
+                            <th>Bệnh Nhân</th>
+                            <th>Số Điện Thoại</th>
+                            <th>Bác Sĩ / Chuyên Khoa</th>
+                            <th>Ca Khám (Slot)</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-center" style="width: 200px;">Thao Tác Nhanh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-reception">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Vui lòng nhập từ khóa tìm kiếm ở trên để tra cứu cuộc hẹn.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // Auto search on enter key
+        $("#input-search-query").on("keypress", function(e) {
+            if (e.which === 13) {
+                searchAppointments();
+            }
+        });
+        
+        // Auto search default for demo
+        $("#input-search-query").val("0944444444");
+        searchAppointments();
+    });
+
+    function searchAppointments() {
+        const query = $("#input-search-query").val().trim();
+        if (!query) return;
+
+        $.ajax({
+            url: `${API_BASE_URL}/reception/appointments/search?query=${encodeURIComponent(query)}`,
+            type: "GET",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                if (!data || data.length === 0) {
+                    $("#tbody-reception").html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Không tìm thấy cuộc hẹn nào phù hợp.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
+                const rows = data.map(item => {
+                    let statusBadge = `<span class="badge badge-${item.status.toLowerCase()}">${item.status}</span>`;
+                    
+                    let actionButtons = "";
+                    if (item.status === "Confirmed") {
+                        actionButtons = `
+                            <button class="btn btn-sm btn-success rounded-pill px-3 me-1" onclick="checkIn(${item.appointmentId})">
+                                <i class="bi bi-check-circle me-1"></i>Check-in
+                            </button>
+                            <button class="btn btn-sm btn-outline-purple rounded-pill px-2" onclick="markNoShow(${item.appointmentId})">
+                                No-Show
+                            </button>
+                        `;
+                    } else if (item.status === "CheckedIn") {
+                        actionButtons = `
+                            <span class="text-warning fw-semibold fs-7"><i class="bi bi-hourglass-split me-1"></i>Đã vào hàng chờ</span>
+                            <button class="btn btn-sm btn-outline-danger ms-2" onclick="markNoShow(${item.appointmentId})">No-Show</button>
+                        `;
+                    } else {
+                        actionButtons = `<span class="text-muted fs-7">Hoàn tất / Đã đóng</span>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td class="fw-bold">#${item.appointmentId}</td>
+                            <td class="fw-semibold text-dark">${item.patientName}</td>
+                            <td><i class="bi bi-telephone text-muted me-1"></i>${item.patientPhone}</td>
+                            <td>
+                                <div>${item.doctorName}</div>
+                                <small class="text-primary fw-semibold">${item.specializationName}</small>
+                            </td>
+                            <td>
+                                <div class="fw-semibold"><i class="bi bi-calendar-event me-1"></i>${item.slotDate}</div>
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i>${item.startTime} - ${item.endTime}</small>
+                            </td>
+                            <td>${statusBadge}</td>
+                            <td class="text-center">${actionButtons}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $("#tbody-reception").html(rows);
+            },
+            error: function(xhr) {
+                showCustomAlert("Không thể tải cuộc hẹn. Vui lòng đăng nhập với tài khoản Staff/Admin.", "Lỗi", "error");
+            }
+        });
+    }
+
+    function checkIn(appointmentId) {
+        $.ajax({
+            url: `${API_BASE_URL}/appointments/${appointmentId}/check-in`,
+            type: "PATCH",
+            headers: getAuthHeaders(),
+            success: function(res) {
+                showCustomAlert("Đã Check-in thành công cho bệnh nhân!", "Check-in Thành Công", "success");
+                searchAppointments();
+            },
+            error: function(xhr) {
+                showCustomAlert(xhr.responseJSON?.message || "Không thể thực hiện Check-in.", "Lỗi", "error");
+            }
+        });
+    }
+
+    function markNoShow(appointmentId) {
+        showCustomConfirm("Bạn có chắc chắn muốn đánh dấu bệnh nhân bỏ hẹn (No-Show)?", function() {
+            $.ajax({
+                url: `${API_BASE_URL}/appointments/${appointmentId}/no-show`,
+                type: "PATCH",
+                headers: getAuthHeaders(),
+                success: function(res) {
+                    showCustomAlert("Đã ghi nhận vắng mặt (No-Show).", "Thông Báo", "info");
+                    searchAppointments();
+                },
+                error: function(xhr) {
+                    showCustomAlert(xhr.responseJSON?.message || "Không thể đánh dấu No-Show.", "Lỗi", "error");
+                }
+            });
+        }, "Xác Nhận Vắng Mặt");
+    }
+</script>
+}
