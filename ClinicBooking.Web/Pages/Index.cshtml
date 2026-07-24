@@ -1,10 +1,133 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Trang chủ & Tra cứu Bác sĩ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero-section mb-4 text-center">
+    <h1 class="display-5 fw-bold mb-2">Hệ Thống Đặt Lịch Khám Bệnh Trực Tuyến</h1>
+    <p class="lead mb-3">Chủ động tra cứu Bác sĩ, chọn khung giờ rảnh và quản lý lịch hẹn nhanh chóng.</p>
+    <a href="/Booking/Index" class="btn btn-warning btn-lg fw-bold px-4 py-2 text-dark shadow-sm">
+        <i class="fa-solid fa-calendar-plus me-2"></i>Đặt Lịch Khám Ngay
+    </a>
 </div>
+
+<div class="card card-custom p-4 mb-4 shadow-sm">
+    <h4 class="mb-3 text-primary"><i class="fa-solid fa-magnifying-glass me-2"></i>Tra cứu & Tìm kiếm Bác sĩ</h4>
+    <div class="row g-3">
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Tên Bác sĩ</label>
+            <input type="text" id="searchName" class="form-control" placeholder="Nhập tên bác sĩ (Ví dụ: An, Bình...)..." />
+        </div>
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Chuyên khoa</label>
+            <input type="text" id="searchSpec" class="form-control" placeholder="Nhập chuyên khoa (Nội khoa, Nhi khoa...)..." />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button id="btnSearch" class="btn btn-primary w-100 fw-semibold">
+                <i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="doctorListContainer">
+    <div class="col-12 text-center py-5 text-muted">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Đang tải danh sách Bác sĩ từ hệ thống...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const API_URL = 'https://localhost:7129';
+
+        function loadDoctors() {
+            const name = $('#searchName').val().trim();
+            const spec = $('#searchSpec').val().trim();
+
+            $('#doctorListContainer').html(`
+                <div class="col-12 text-center py-5 text-muted">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Đang tìm kiếm Bác sĩ...</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: `${API_URL}/api/doctors?name=${encodeURIComponent(name)}&specialization=${encodeURIComponent(spec)}`,
+                type: 'GET',
+                success: function(data) {
+                    renderDoctorCards(data);
+                },
+                error: function() {
+                    $('#doctorListContainer').html(`
+                        <div class="col-12 text-center py-5 text-danger">
+                            <i class="fa-solid fa-triangle-exclamation fa-3x mb-3"></i>
+                            <h5>Không thể tải danh sách bác sĩ.</h5>
+                            <p class="mb-0">Vui lòng kiểm tra API và thử lại.</p>
+                        </div>
+                    `);
+                    return;
+                    const mockDoctors = [
+                        { doctorId: 1, fullName: "BS. Nguyễn Văn An", specializationName: "Nội khoa", licenseNumber: "MED-LIC-001", yearsOfExperience: 12, bio: "Chuyên gia về tim mạch và nội khoa tổng quát với 12 năm kinh nghiệm." },
+                        { doctorId: 2, fullName: "BS. Trần Thị Bình", specializationName: "Nhi khoa", licenseNumber: "MED-LIC-002", yearsOfExperience: 8, bio: "Bác sĩ chuyên khoa Nhi tận tâm, giàu kinh nghiệm chăm sóc sức khỏe trẻ nhỏ." }
+                    ];
+
+                    let filtered = mockDoctors;
+                    if (name) filtered = filtered.filter(d => d.fullName.toLowerCase().includes(name.toLowerCase()));
+                    if (spec) filtered = filtered.filter(d => d.specializationName.toLowerCase().includes(spec.toLowerCase()));
+
+                    renderDoctorCards(filtered);
+                }
+            });
+        }
+
+        function renderDoctorCards(doctors) {
+            if (!doctors || doctors.length === 0) {
+                $('#doctorListContainer').html(`
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="fa-solid fa-user-slash fa-3x mb-3 text-secondary"></i>
+                        <h5>Không tìm thấy bác sĩ phù hợp với từ khóa lọc.</h5>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            doctors.forEach(doc => {
+                html += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card card-custom h-100 shadow-sm">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                        <i class="fa-solid fa-user-doctor"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-0 fw-bold">${doc.fullName}</h5>
+                                        <span class="badge bg-info text-dark mt-1">${doc.specializationName || 'Chuyên khoa'}</span>
+                                    </div>
+                                </div>
+                                <p class="card-text text-muted small mb-2"><i class="fa-solid fa-certificate me-1 text-warning"></i> CCHN: ${doc.licenseNumber || 'N/A'}</p>
+                                <p class="card-text text-muted small mb-3"><i class="fa-solid fa-award me-1 text-success"></i> Kinh nghiệm: ${doc.yearsOfExperience || 5} năm</p>
+                                <p class="card-text text-secondary mb-4 flex-grow-1">${doc.bio || 'Bác sĩ giàu kinh nghiệm, tận tâm với bệnh nhân.'}</p>
+                                <a href="/Booking/Index?doctorId=${doc.doctorId}" class="btn btn-outline-primary w-100 fw-semibold mt-auto">
+                                    <i class="fa-solid fa-calendar-check me-1"></i> Xem lịch & Đặt hẹn
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#doctorListContainer').html(html);
+        }
+
+        $(document).ready(function() {
+            loadDoctors();
+            $('#btnSearch').click(loadDoctors);
+            $('#searchName, #searchSpec').on('keypress', function(e) {
+                if (e.which === 13) loadDoctors();
+            });
+        });
+    </script>
+}

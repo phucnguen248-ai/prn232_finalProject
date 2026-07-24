@@ -1,4 +1,8 @@
+using ClinicBooking.Core.Interfaces;
+using ClinicBooking.Core.Validators;
 using ClinicBooking.Infrastructure.Data;
+using ClinicBooking.Infrastructure.Services;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,9 +12,24 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("ClinicBooking.Infrastructure")));
 
+// Cấu hình CORS để Web Frontend gọi API mượt mà
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Register Member B Services & Validators
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingValidator>();
 
 var app = builder.Build();
 
@@ -22,6 +41,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 

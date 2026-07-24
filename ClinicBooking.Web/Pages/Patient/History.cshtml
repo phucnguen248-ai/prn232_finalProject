@@ -1,0 +1,232 @@
+@page
+@model ClinicBooking.Web.Pages.Patient.HistoryModel
+@{
+    ViewData["Title"] = "Lịch Sử Đặt Hẹn Khám Bệnh";
+}
+
+<div class="card card-custom p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="text-primary fw-bold mb-1">
+                <i class="fa-solid fa-clock-rotate-left me-2"></i>Lịch Sử Đặt Lịch Hẹn Khám Bệnh
+            </h3>
+            <p class="text-muted mb-0">Xem danh sách các cuộc hẹn của bạn và quản lý yêu cầu hủy lịch hẹn.</p>
+        </div>
+        <a href="/Booking/Index" class="btn btn-primary fw-semibold shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i> Đặt Lịch Mới
+        </a>
+    </div>
+
+    <div class="alert alert-info border-info d-flex align-items-center mb-4" role="alert">
+        <i class="fa-solid fa-circle-info fa-2x me-3 text-info"></i>
+        <div>
+            <strong>Quy tắc Hủy Lịch (Grace Period):</strong> Bạn được phép Hủy lịch hẹn miễn phí nếu bấm Hủy trong vòng <strong>15 phút</strong> ngay sau khi đặt thành công, HOẶC thời điểm bấm Hủy cách giờ khám <strong>ít nhất 2 tiếng</strong>.
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Mã Hẹn</th>
+                    <th scope="col">Bác Sĩ</th>
+                    <th scope="col">Chuyên Khoa</th>
+                    <th scope="col">Thời Gian Khám</th>
+                    <th scope="col">Lý Do Khám</th>
+                    <th scope="col">Trạng Thái</th>
+                    <th scope="col">Thao Tác Hủy Lịch</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody">
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        <div class="spinner-border text-primary me-2" role="status"></div> Đang tải lịch sử hẹn...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Xác Nhận Hủy Lịch Hẹn</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2 fs-6">Bạn có chắc chắn muốn hủy cuộc hẹn này không?</p>
+                <div class="p-3 bg-light rounded border text-secondary small">
+                    <i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i> Khi hủy thành công, khung giờ ca khám sẽ tự động được hoàn trả cho bệnh nhân khác đăng ký.
+                </div>
+                <input type="hidden" id="cancelAppointmentId" value="0" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary fw-semibold" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" id="btnConfirmCancel" class="btn btn-danger fw-bold">
+                    <i class="fa-solid fa-ban me-1"></i> Đồng Ý Hủy Lịch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const API_URL = 'https://localhost:7129';
+
+        $(document).ready(function() {
+            loadHistory();
+
+            $(document).on('click', '.btn-cancel-appt', function() {
+                const apptId = $(this).data('appt-id');
+                $('#cancelAppointmentId').val(apptId);
+                $('#cancelModal').modal('show');
+            });
+
+            $('#btnConfirmCancel').click(function() {
+                const apptId = $('#cancelAppointmentId').val();
+                if (!apptId || apptId <= 0) return;
+
+                $('#btnConfirmCancel').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang hủy...');
+
+                $.ajax({
+                    url: `${API_URL}/api/appointments/${apptId}/cancel`,
+                    type: 'PATCH',
+                    headers: {
+                        'X-User-Id': 4
+                    },
+                    success: function(res) {
+                        $('#cancelModal').modal('hide');
+                        $('#btnConfirmCancel').prop('disabled', false).html('<i class="fa-solid fa-ban me-1"></i> Đồng Ý Hủy Lịch');
+                        toastr.success(res.message || 'Hủy lịch hẹn thành công!');
+                        loadHistory();
+                    },
+                    error: function(xhr) {
+                        $('#btnConfirmCancel').prop('disabled', false).html('<i class="fa-solid fa-ban me-1"></i> Đồng Ý Hủy Lịch');
+                        $('#cancelModal').modal('hide');
+
+                        if (xhr.status === 400) {
+                            toastr.error(xhr.responseJSON?.message || 'Không thể hủy lịch: Đã vi phạm quy tắc Grace Period.');
+                        } else {
+                            toastr.error('Có lỗi xảy ra khi gửi yêu cầu hủy lịch.');
+                        }
+                    }
+                });
+            });
+        });
+
+        function loadHistory() {
+            $.ajax({
+                url: `${API_URL}/api/appointments/my-history`,
+                type: 'GET',
+                headers: {
+                    'X-User-Id': 4
+                },
+                success: function(history) {
+                    renderHistoryTable(history);
+                },
+                error: function() {
+                    $('#historyTableBody').html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-danger">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                Không thể tải lịch sử hẹn. Vui lòng thử lại.
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                    const mockHistory = [
+                        {
+                            appointmentId: 1001,
+                            doctorName: "BS. Nguyễn Văn A",
+                            specializationName: "Nhi khoa",
+                            slotDate: "2026-07-25",
+                            startTime: "08:30:00",
+                            endTime: "09:00:00",
+                            reason: "Khám sốt ho kéo dài 2 ngày",
+                            status: "Confirmed",
+                            createdAt: new Date().toISOString(),
+                            canCancel: true
+                        },
+                        {
+                            appointmentId: 1002,
+                            doctorName: "BS. Trần Thị B",
+                            specializationName: "Nội khoa",
+                            slotDate: "2026-07-20",
+                            startTime: "14:00:00",
+                            endTime: "14:30:00",
+                            reason: "Khám định kỳ huyết áp",
+                            status: "Completed",
+                            createdAt: "2026-07-19T08:00:00Z",
+                            canCancel: false
+                        }
+                    ];
+                    renderHistoryTable(mockHistory);
+                }
+            });
+        }
+
+        function renderHistoryTable(list) {
+            if (!list || list.length === 0) {
+                $('#historyTableBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-folder-open fa-2x mb-2"></i>
+                            <p class="mb-0">Bạn chưa có lịch hẹn khám nào.</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            list.forEach(item => {
+                let badgeClass = 'bg-secondary';
+                let statusText = item.status;
+
+                switch(item.status) {
+                    case 'Confirmed': badgeClass = 'bg-primary'; statusText = 'Đã Xác Nhận'; break;
+                    case 'CheckedIn': badgeClass = 'bg-info text-dark'; statusText = 'Đã Check-in'; break;
+                    case 'Completed': badgeClass = 'bg-success'; statusText = 'Hoàn Tất Khám'; break;
+                    case 'Cancelled': badgeClass = 'bg-danger'; statusText = 'Đã Hủy Lịch'; break;
+                    case 'NoShow': badgeClass = 'bg-warning text-dark'; statusText = 'Bỏ Hẹn (No-Show)'; break;
+                }
+
+                const dateStr = item.slotDate;
+                const timeStr = `${item.startTime.substring(0,5)} - ${item.endTime.substring(0,5)}`;
+
+                let actionBtn = '';
+                if (item.status === 'Confirmed' && item.canCancel) {
+                    actionBtn = `
+                        <button class="btn btn-outline-danger btn-sm fw-semibold btn-cancel-appt" data-appt-id="${item.appointmentId}">
+                            <i class="fa-solid fa-xmark me-1"></i> Hủy Lịch (Grace Period)
+                        </button>
+                    `;
+                } else if (item.status === 'Confirmed' && !item.canCancel) {
+                    actionBtn = `<span class="text-muted small" title="Không thể hủy: Quá Grace Period 15 phút"><i class="fa-solid fa-lock me-1"></i> Không thể hủy</span>`;
+                } else {
+                    actionBtn = `<span class="text-muted small">-</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="fw-bold text-primary">#${item.appointmentId}</td>
+                        <td class="fw-semibold">${item.doctorName}</td>
+                        <td><span class="badge bg-light text-dark border">${item.specializationName}</span></td>
+                        <td>
+                            <div><i class="fa-regular fa-calendar me-1 text-primary"></i> ${dateStr}</div>
+                            <div class="small text-muted"><i class="fa-regular fa-clock me-1 text-secondary"></i> ${timeStr}</div>
+                        </td>
+                        <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${item.reason}">${item.reason}</span></td>
+                        <td><span class="badge ${badgeClass} badge-status">${statusText}</span></td>
+                        <td>${actionBtn}</td>
+                    </tr>
+                `;
+            });
+
+            $('#historyTableBody').html(html);
+        }
+    </script>
+}

@@ -106,12 +106,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(s => s.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
-        // 7. Appointment Entity (N:1 with Patient, N:1 with Doctor, 1:1 UNIQUE with Schedule, N:1 Nullable with Staff)
+        // 7. Appointment Entity (N:1 with Patient, N:1 with Doctor, UNIQUE with Schedule for active non-cancelled appointments)
         modelBuilder.Entity<Appointment>(entity =>
         {
             entity.HasKey(a => a.AppointmentId);
 
-            entity.HasIndex(a => a.ScheduleId).IsUnique();
+            // Filtered Unique Index: Chỉ duy nhất với các cuộc hẹn KHÁC Cancelled
+            entity.HasIndex(a => a.ScheduleId)
+                .IsUnique()
+                .HasFilter("[Status] <> 'Cancelled'");
 
             entity.HasOne(a => a.Patient)
                 .WithMany(p => p.Appointments)
